@@ -171,6 +171,7 @@ class UserService:
         try:
             add_result = await UserDao.add_user_dao(query_db, add_user)
             user_id = add_result.user_id
+
             if page_object.role_ids:
                 for role in page_object.role_ids:
                     await UserDao.add_user_role_dao(query_db, UserRoleModel(userId=user_id, roleId=role))

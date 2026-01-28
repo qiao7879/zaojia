@@ -16,8 +16,8 @@ PREFECT_STATUS_ENUM = {
 }
 
 # 2. 项目流程表（关联项目主表，记录流程状态）
-class SysProjectPrefect(Base):
-    __tablename__ = 'sys_project_prefect'
+class ProjectPrefect(Base):
+    __tablename__ = 'project_prefect'
     __table_args__ = {
         'comment': '项目流程管理表',
         'mysql_charset': 'utf8mb4',
@@ -25,7 +25,7 @@ class SysProjectPrefect(Base):
     }
 
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment='流程ID')
-    project_id = Column(BigInteger, nullable=False, ForeignKey('sys_project.id'), comment='关联项目ID（外键→sys_project.id）')
+    pro_id = Column(BigInteger, nullable=False, comment='关联项目ID（外键→sys_project.id）')
     current_status = Column(String(2), nullable=False, default=PREFECT_STATUS_ENUM["CREATE"], comment='当前流程状态（01-创建/02-工程师修改等）')
     # 标记是否显示"开票/用章"按钮（二级/三级复审时为1，其他为0）
     show_invoice_seal = Column(CHAR(1), default='0', comment='是否显示开票/用章按钮（0-不显示/1-显示）')

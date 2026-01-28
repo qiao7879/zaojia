@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CHAR, BigInteger, Column, DateTime, Index, Integer, String
+from sqlalchemy import CHAR, BigInteger, Column, DateTime, Index, Integer, String, Text
 
 from config.database import Base
 
@@ -48,10 +48,10 @@ class SysOperLog(Base):
     oper_url = Column(String(255), nullable=True, server_default="''", comment='请求URL')
     oper_ip = Column(String(128), nullable=True, server_default="''", comment='主机地址')
     oper_location = Column(String(255), nullable=True, server_default="''", comment='操作地点')
-    oper_param = Column(String(2000), nullable=True, server_default="''", comment='请求参数')
-    json_result = Column(String(2000), nullable=True, server_default="''", comment='返回参数')
+    oper_param = Column(Text, nullable=True, server_default="''", comment='请求参数')
+    json_result = Column(Text, nullable=True, server_default="''", comment='返回参数')
     status = Column(Integer, nullable=True, server_default='0', comment='操作状态（0正常 1异常）')
-    error_msg = Column(String(2000), nullable=True, server_default="''", comment='错误消息')
+    error_msg = Column(Text, nullable=True, server_default="''", comment='错误消息')
     oper_time = Column(DateTime, nullable=True, default=datetime.now(), comment='操作时间')
     cost_time = Column(BigInteger, nullable=True, server_default='0', comment='消耗时间')
 

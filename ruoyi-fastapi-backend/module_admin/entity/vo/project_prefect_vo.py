@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Optional, Union, List
 
@@ -13,16 +15,20 @@ class ProjectPrefectModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
 
     id: Optional[int] = Field(default=None, description='流程ID')
-    project_id: Optional[int] = Field(default=None, description='项目ID')
+    pro_id: Optional[int] = Field(default=None, description='项目ID')
     current_status: Optional[str] = Field(default=None, description='当前流程状态')
     show_invoice_seal: Optional[str] = Field(default='0', description='是否显示开票/用章按钮（0-不显示/1-显示）')
     operator_id: Optional[int] = Field(default=None, description='操作人ID')
     operator_name: Optional[str] = Field(default=None, description='操作人名称')
+    create_time: Optional[datetime] = Field(default_factory=datetime.now, description='创建时间')
+    update_time: Optional[datetime] = Field(default_factory=datetime.now, description='更新时间')
+    del_flag: Optional[str] = Field(default='0', max_length=1, description='删除标志（0-存在/2-删除）')
+
 
     # 校验：项目ID非空
-    @NotBlank(field_name='project_id', message='项目ID不能为空')
+    @NotBlank(field_name='pro_id', message='项目ID不能为空')
     def get_project_id(self) -> Union[int, None]:
-        return self.project_id
+        return self.pro_id
 
 
 # 请求模型（更新流程状态）

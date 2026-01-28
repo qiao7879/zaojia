@@ -2,6 +2,7 @@ import io
 import os
 import re
 from collections.abc import Generator, Sequence
+from datetime import datetime
 from typing import Any, Literal, Union, overload
 
 import pandas as pd
@@ -68,6 +69,7 @@ class SqlalchemyUtil:
                     base_dict[name] = cls.serialize_result(value, 'snake_to_camel')
         elif isinstance(obj, dict):
             base_dict = obj.copy()
+            base_dict.pop('_sa_instance_state', None)
         if transform_case == 'snake_to_camel':
             return {CamelCaseUtil.snake_to_camel(k): v for k, v in base_dict.items()}
         if transform_case == 'camel_to_snake':

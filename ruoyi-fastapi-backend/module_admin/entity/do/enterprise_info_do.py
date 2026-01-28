@@ -25,7 +25,7 @@ class Enterprise(Base):
         {'comment': '企业基本信息表'}
     )
 
-    ent_id = Column(BigInteger, primary_key=True, nullable=False, autoincrement=True, comment='主键ID')
+    ent_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True, comment='主键ID')
     enterprise_name = Column(String(200), nullable=False, comment='企业名称')
     taxpayer_id = Column(String(20), nullable=False, comment='纳税人识别号')
     ent_type = Column(

@@ -88,6 +88,12 @@ export const constantRoutes = [
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
+//     {
+//   path: '/project/detail',
+//   component: () => import('@/views/projectManagement/projectInfo/detail/info.vue'),
+//   name: 'ProjectDetail',
+//   meta: { title: '项目详情', icon: 'form' }
+// },
   {
     path: '/system/user-auth',
     component: Layout,
@@ -162,7 +168,7 @@ export const dynamicRoutes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: constantRoutes,
+  routes: [...constantRoutes, ...dynamicRoutes],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition

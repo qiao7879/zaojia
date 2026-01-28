@@ -1,13 +1,15 @@
 from collections.abc import Sequence
-from typing import Union
+from typing import Union, Any
 
 from sqlalchemy import delete, select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from common.vo import PageModel
 from module_admin.entity.do.enterprise_info_do import Enterprise
 from module_admin.entity.do.role_do import SysRole, SysRoleMenu
 from module_admin.entity.do.user_do import SysUser, SysUserRole
-from module_admin.entity.vo.enterprise_info_vo import EnterpriseQueryModel, EnterpriseModel
+from module_admin.entity.vo.enterprise_info_vo import EnterpriseQueryModel, EnterpriseModel, EnterprisePageModel
+from utils.page_util import PageUtil
 
 
 class EnterpriseDao:
@@ -25,8 +27,6 @@ class EnterpriseDao:
         :param ent_id: 信息id
         :return: 菜单信息对象
         """
-        # enterprise_info = (await db.execute(
-        #     select(Enterprise).where(Enterprise.ent_id == enterprise_info))).scalars().first()
         enterprise_info = await db.get(Enterprise, ent_id)
         return enterprise_info
 
@@ -50,28 +50,24 @@ class EnterpriseDao:
         return enterprise_info
 
     @classmethod
-    async def get_ent_list(cls, db: AsyncSession, page_object: EnterpriseQueryModel) -> Sequence[
-        Enterprise]:
+    async def get_ent_list(cls, db: AsyncSession, page_object: EnterprisePageModel, is_page: bool = True) -> Union[PageModel, list[dict[str, Any]]]:
         enterprise_info_list = (
-            (
-                await db.execute(
-                    select(Enterprise)
-                    .where(
-                        Enterprise.enterprise_name.like(
-                            f'%{page_object.enterprise_name}%') if page_object.enterprise_name else True,
-                        Enterprise.contact_person.like(
-                            f'%{page_object.contact_person}%') if page_object.contact_person else True,
-                        Enterprise.contact_phone == page_object.contact_phone if page_object.contact_phone else True,
-                        Enterprise.bank_account == page_object.bank_account if page_object.taxpayer_id else True
-                    )
-                    .order_by(Enterprise.create_time.desc())
-                    .distinct()
-                )
+            select(Enterprise)
+            .where(
+                Enterprise.enterprise_name.like(
+                    f'%{page_object.enterprise_name}%') if page_object.enterprise_name else True,
+                Enterprise.contact_person.like(
+                    f'%{page_object.contact_person}%') if page_object.contact_person else True,
+                Enterprise.contact_phone == page_object.contact_phone if page_object.contact_phone else True,
+                Enterprise.ent_type == page_object.ent_type if page_object.ent_type else True,
+                Enterprise.bank_account == page_object.bank_account if page_object.taxpayer_id else True
             )
-            .scalars()
-            .all()
+            .order_by(Enterprise.create_time.desc())
+            .distinct())
+        post_list: Union[PageModel, list[dict[str, Any]]] = await PageUtil.paginate(
+            db, enterprise_info_list, page_object.page_num, page_object.page_size, is_page
         )
-        return enterprise_info_list
+        return post_list
 
     @classmethod
     async def add_ent_dao(cls, db: AsyncSession, enterprise_info: EnterpriseModel) -> Enterprise:

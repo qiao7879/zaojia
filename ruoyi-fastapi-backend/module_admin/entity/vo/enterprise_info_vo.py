@@ -92,12 +92,12 @@ class EnterpriseDetailModel(BaseModel):
     enterprise_info: Optional[EnterpriseModel] = Field(None, description='企业信息')
 
 
-class EnterprisePageModel(BaseModel):
+class EnterprisePageModel(EnterpriseModel):
     """
     企业信息分页响应模型
     """
-    total: Optional[int] = Field(0, description='总记录数')
-    rows: list[Union[None, EnterpriseModel]] = Field([], description='数据列表')
+    page_num: int = Field(default=1, description='当前页码')
+    page_size: int = Field(default=10, description='每页记录数')
 
 
 class EnterpriseQueryModel(EnterpriseModel):

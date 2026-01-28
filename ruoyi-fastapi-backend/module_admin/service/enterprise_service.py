@@ -7,7 +7,8 @@ from common.vo import CrudResponseModel
 from exceptions.exception import ServiceException
 from module_admin.dao.enterprise_info_dao import EnterpriseDao
 from module_admin.entity.do.enterprise_info_do import Enterprise
-from module_admin.entity.vo.enterprise_info_vo import EnterpriseQueryModel, EnterpriseModel, DeleteEnterpriseModel
+from module_admin.entity.vo.enterprise_info_vo import EnterpriseQueryModel, EnterpriseModel, DeleteEnterpriseModel, \
+    EnterprisePageModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
 from utils.common_util import CamelCaseUtil
 
@@ -22,17 +23,17 @@ class EnterpriseService:
 
     @classmethod
     async def get_ent_list_services(
-        cls, query_db: AsyncSession, page_object: EnterpriseQueryModel) -> list[dict[str, Any]]:
+        cls, query_db: AsyncSession, page_object: EnterprisePageModel, is_page: bool = False) -> list[dict[str, Any]]:
         """
         获取单位列表信息service
 
         :param query_db: orm对象
         :param page_object: 分页查询参数对象
-        :param current_user: 当前用户对象
+        :param is_page: 是否分页查询
         :return: 单位列表信息对象
         """
         menu_list_result = await EnterpriseDao.get_ent_list(
-            query_db, page_object
+            query_db, page_object, is_page
         )
 
         return CamelCaseUtil.transform_result(menu_list_result)
