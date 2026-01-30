@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Field, model_validator, ConfigDict
-from typing import Optional, Union, List
 from datetime import datetime
-from decimal import Decimal
+from typing import Optional, Union
 
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 from pydantic_validation_decorator import NotBlank, Size
 
@@ -17,8 +16,9 @@ class ProjectModel(BaseModel):
     pro_id: Optional[int] = Field(default=None, description='项目ID（主键）')
     project_code: Optional[str] = Field(default=None, max_length=50, description='项目唯一编码（如XM20260101）')
     project_name: Optional[str] = Field(default=None, max_length=255, description='项目全称（Excel核心字段）')
-    project_type: Optional[str] = Field(default=None, max_length=20,
-                                        description='项目类型（如研发项目/运维项目，Excel字段）')
+    project_type: Optional[str] = Field(
+        default=None, max_length=20, description='项目类型（如研发项目/运维项目，Excel字段）'
+    )
 
     # 业务核心字段
     ent_id: Optional[int] = Field(default=None, description='项目所属企业ID（外键→enterprise_info.ent_id）')
@@ -55,8 +55,9 @@ class ProjectModel(BaseModel):
     commission_date: Optional[datetime] = Field(default=None, description='提成计提日期')
     contract_electronic_saved: Optional[str] = Field(default=None, max_length=20, description='合同电子档是否已存档')
     contract_file: Optional[str] = Field(default=None, max_length=255, description='合同文件编号')
-    deliverable_electronic_saved: Optional[str] = Field(default=None, max_length=20,
-                                                        description='成果文件电子档是否已存档')
+    deliverable_electronic_saved: Optional[str] = Field(
+        default=None, max_length=20, description='成果文件电子档是否已存档'
+    )
     deliverable_file: Optional[str] = Field(default=None, max_length=255, description='成果文件编号')
     document_paper_saved: Optional[str] = Field(default=None, max_length=20, description='纸质资料存档情况')
     document_save_type: Optional[str] = Field(default=None, max_length=100, description='资料存档类型说明')
@@ -68,7 +69,9 @@ class ProjectModel(BaseModel):
     project_budget: Optional[float] = Field(default=None, description='项目预算（Excel字段）')
     project_desc: Optional[str] = Field(default=None, description='项目描述（Excel字段）')
     status: Optional[str] = Field(default='0', max_length=1, description='项目状态（0-正常/1-暂停/2-终止）')
-    prefect_status: Optional[str] = Field(default='01', max_length=255, description='项目进度状态（01-创建/02-工程师修改等）')
+    prefect_status: Optional[str] = Field(
+        default='01', max_length=255, description='项目进度状态（01-创建/02-工程师修改等）'
+    )
 
     # 通用字段（软删除、创建/更新信息）
     create_by: Optional[int] = Field(default=None, description='创建人ID（外键→sys_user.id，项目创建人）')
@@ -85,6 +88,7 @@ class ProjectModel(BaseModel):
 
 class EditProjectModel(ProjectModel):
     """修改项目请求模型（已归档前均可修改）"""
+
     update_by: Optional[int] = Field(default=None, description='更新人ID')
     update_name: Optional[str] = Field(default=None, description='更新人名称')
 
@@ -92,8 +96,11 @@ class EditProjectModel(ProjectModel):
 # 响应模型（项目详情/列表）
 class ProjectDetailModel(BaseModel):
     """项目详情响应模型（含流程状态）"""
+
     project_info: Optional[ProjectModel] = Field(default=None, description='项目基础信息')
-    prefect_info: Optional[ProjectPrefectModel] = Field(default=None, description='流程状态信息（当前节点、是否显示开票用章按钮）')
+    prefect_info: Optional[ProjectPrefectModel] = Field(
+        default=None, description='流程状态信息（当前节点、是否显示开票用章按钮）'
+    )
     opinion_list: Optional[ProjectPrefectOpinionModel] = Field(default=[], description='历史审核意见列表')
 
 
@@ -101,12 +108,14 @@ class ProjectQueryModel(ProjectModel):
     """
     企业信息不分页查询模型
     """
+
     begin_time: Optional[str] = Field(default=None, description='开始时间')
     end_time: Optional[str] = Field(default=None, description='结束时间')
 
 
 class ProjectPageModel(ProjectQueryModel):
     """项目分页列表响应模型"""
+
     page_num: int = Field(default=1, description='当前页码')
     page_size: int = Field(default=10, description='每页记录数')
 
@@ -115,6 +124,7 @@ class DeleteProjectModel(BaseModel):
     """
     删除企业信息请求模型
     """
+
     model_config = ConfigDict(alias_generator=to_camel)
 
     pro_ids: str = Field(description='项目ID列表')
@@ -177,6 +187,7 @@ class DeleteProjectModel(BaseModel):
 #     fail_details: List[str] = Field(default=[], description='失败详情（如"项目编号XM001：已存在"）')
 class AddProjectModel(ProjectModel):
     """新增项目请求模型"""
+
     @NotBlank(field_name='project_code', message='项目编号不能为空')
     @Size(field_name='project_code', max_length=30, message='项目编号长度不能超过30字符')
     def get_project_code(self) -> Union[str, None]:

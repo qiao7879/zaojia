@@ -104,5 +104,3 @@ class UploadUtil:
         :param filepath: 文件路径
         """
         os.remove(filepath)
-
-

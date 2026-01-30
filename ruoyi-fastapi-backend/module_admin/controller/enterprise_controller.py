@@ -12,8 +12,11 @@ from common.aspect.pre_auth import CurrentUserDependency, PreAuthDependency
 from common.enums import BusinessType
 from common.router import APIRouterPro
 from common.vo import DataResponseModel, ResponseBaseModel
-from module_admin.entity.vo.enterprise_info_vo import EnterpriseModel, EnterpriseQueryModel, DeleteEnterpriseModel, \
-    EnterprisePageModel
+from module_admin.entity.vo.enterprise_info_vo import (
+    DeleteEnterpriseModel,
+    EnterpriseModel,
+    EnterprisePageModel,
+)
 from module_admin.entity.vo.user_vo import CurrentUserModel
 from module_admin.service.enterprise_service import EnterpriseService
 from utils.log_util import logger
@@ -34,7 +37,8 @@ menu_controller = APIRouterPro(
 async def get_system_menu_list(
     request: Request,
     menu_query: Annotated[EnterprisePageModel, Query()],
-    query_db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
+) -> Response:
     menu_query_result = await EnterpriseService.get_ent_list_services(query_db, menu_query, is_page=True)
     logger.info('获取成功')
 
@@ -123,22 +127,5 @@ async def query_detail_system_menu(
 ) -> Response:
     menu_detail_result = await EnterpriseService.ent_detail_services(query_db, ent_id)
     logger.info(f'获取menu_id为{ent_id}的信息成功')
-
-    return ResponseUtil.success(data=menu_detail_result)
-
-@menu_controller.get(
-    '/{status}',
-    summary='根据单位类型获取数据接口',
-    description='用于根据单位类型获取数据',
-    response_model=DataResponseModel[EnterpriseModel],
-    dependencies=[UserInterfaceAuthDependency('project:ent:query')],
-)
-async def query_detail_system_menu(
-    request: Request,
-    status: Annotated[int, Path(description='单位ID')],
-    query_db: Annotated[AsyncSession, DBSessionDependency()],
-) -> Response:
-    menu_detail_result = await EnterpriseService.ent_detail_services(query_db, status)
-    logger.info(f'获取menu_id为{status}的信息成功')
 
     return ResponseUtil.success(data=menu_detail_result)

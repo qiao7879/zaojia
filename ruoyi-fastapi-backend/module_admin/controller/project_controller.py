@@ -1,26 +1,31 @@
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, Request, Path, Query, Depends
+from fastapi import Path, Query, Request
 from fastapi.responses import Response
-from typing import Annotated, Optional, Dict, Any
-
 from pydantic_validation_decorator import ValidateFields
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.annotation.log_annotation import Log
 from common.aspect.db_seesion import DBSessionDependency
-
 from common.aspect.interface_auth import UserInterfaceAuthDependency
-from common.aspect.pre_auth import PreAuthDependency, CurrentUserDependency
+from common.aspect.pre_auth import CurrentUserDependency, PreAuthDependency
 from common.enums import BusinessType
 from common.router import APIRouterPro
-from common.vo import ResponseBaseModel, DynamicResponseModel, DataResponseModel
-from module_admin.entity.vo.project_prefect_vo import ProjectPrefectModel, UpdatePrefectStatusModel
-from module_admin.entity.vo.project_vo import AddProjectModel, EditProjectModel, ProjectDetailModel, ProjectPageModel, \
-    ProjectQueryModel, DeleteProjectModel, ProjectModel
+from common.vo import DataResponseModel, DynamicResponseModel, ResponseBaseModel
+from module_admin.entity.vo.project_prefect_vo import BatchUpdatePrefectStatusModel, UpdatePrefectStatusModel
+from module_admin.entity.vo.project_vo import (
+    AddProjectModel,
+    DeleteProjectModel,
+    EditProjectModel,
+    ProjectDetailModel,
+    ProjectModel,
+    ProjectPageModel,
+)
 from module_admin.entity.vo.user_vo import CurrentUserModel
 from module_admin.service.project_prefect_opinion_service import ProjectPrefectOpinionService
 from module_admin.service.project_prefect_service import ProjectPrefectService
+
 # from module_admin.service.project_prefect_opinion_service import ProjectPrefectOpinionService
 # from module_admin.service.project_prefect_service import ProjectPrefectService
 from module_admin.service.project_service import ProjectService
@@ -29,8 +34,12 @@ from utils.response_util import ResponseUtil
 
 # 路由配置（前缀：/system/project，分类：系统管理-项目管理）
 project_controller = APIRouterPro(
-    prefix='/system/project',order_num=5,tags=['项目管理'],dependencies=[PreAuthDependency()]  # 全局登录认证
+    prefix='/system/project',
+    order_num=5,
+    tags=['项目管理'],
+    dependencies=[PreAuthDependency()],  # 全局登录认证
 )
+
 
 # ------------------------------ 项目主表接口 ------------------------------
 # 1. 项目创建人新建项目
@@ -39,9 +48,10 @@ project_controller = APIRouterPro(
     summary='项目创建人新建项目',
     description='仅项目创建人可新建项目，同步初始化流程',
     response_model=ResponseBaseModel,
-    dependencies=[UserInterfaceAuthDependency('project:register:add'),
+    dependencies=[
+        UserInterfaceAuthDependency('project:register:add'),
         # Depends(RoleAuthDependency([RoleConstant.PROJECT_CREATOR]))  # 仅项目创建人
-    ]
+    ],
 )
 @ValidateFields(validate_model='add_project')
 @Log(title='项目管理', business_type=BusinessType.INSERT)
@@ -50,7 +60,7 @@ async def add_project(
     project: AddProjectModel,
     # prefect_data: ProjectPrefectModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]  # 当前用户信息（含角色）
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],  # 当前用户信息（含角色）
 ) -> Response:
     project.create_by = current_user.user.user_id
     project.create_name = current_user.user.nick_name
@@ -62,6 +72,7 @@ async def add_project(
     logger.info(result.message)
 
     return ResponseUtil.success(msg=result.message)
+
 
 # 2. 修改项目（已归档前可修改）
 @project_controller.put(
@@ -87,6 +98,7 @@ async def edit_projects(
     logger.info(edit_menu_result.message)
 
     return ResponseUtil.success(msg=edit_menu_result.message)
+
 
 @project_controller.delete(
     '/{pro_ids}',
@@ -118,11 +130,14 @@ async def delete_system_projects(
 async def get_system_menu_list(
     request: Request,
     project_query: Annotated[ProjectPageModel, Query()],
-    query_db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
+) -> Response:
     menu_query_result = await ProjectService.get_project_list_services(query_db, project_query, is_page=True)
     logger.info('获取成功')
 
     return ResponseUtil.success(data=menu_query_result)
+
 
 # @project_controller.get(
 #     '/{pro_id}',
@@ -146,17 +161,18 @@ async def get_system_menu_list(
     summary='查询项目详情',
     description='查看项目基础信息、当前流程状态、是否显示开票用章按钮、历史审核意见',
     response_model=DynamicResponseModel[ProjectDetailModel],
-    dependencies=[UserInterfaceAuthDependency('project:register:detail')]
+    dependencies=[UserInterfaceAuthDependency('project:register:detail')],
 )
 async def get_project_detail(
     request: Request,
     project_id: Annotated[int, Path(description='项目ID')],
-    query_db: Annotated[AsyncSession, DBSessionDependency()]
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
 ) -> Response:
     detail_data = await ProjectService.get_project_detail_services(query_db, project_id)
     logger.info('获取成功')
 
     return ResponseUtil.success(data=detail_data)
+
 
 # ------------------------------ 项目流程接口 ------------------------------
 # 1. 项目创建人下发至工程师
@@ -168,7 +184,7 @@ async def get_project_detail(
     dependencies=[
         UserInterfaceAuthDependency('project:prefect:send'),
         # Depends(RoleAuthDependency([RoleConstant.PROJECT_CREATOR]))
-    ]
+    ],
 )
 @ValidateFields(validate_model='update_prefect_status')
 @Log(title='项目流程', business_type=BusinessType.UPDATE)
@@ -176,12 +192,14 @@ async def send_to_engineer(
     request: Request,
     prefect: UpdatePrefectStatusModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
     prefect.operator_id = current_user.user.user_id
     prefect.operator_name = current_user.user.nick_name
     result = await ProjectPrefectService.creator_send_to_engineer_services(query_db, prefect, current_user)
     return ResponseUtil.success(msg=result.message)
+
+
 #
 # # 2. 工程师提交至二级复审
 @project_controller.put(
@@ -192,7 +210,7 @@ async def send_to_engineer(
     dependencies=[
         UserInterfaceAuthDependency('project:prefect:engineer-submit'),
         # Depends(RoleAuthDependency([RoleConstant.ENGINEER]))
-    ]
+    ],
 )
 @ValidateFields(validate_model='update_prefect_status')
 @Log(title='项目流程', business_type=BusinessType.UPDATE)
@@ -200,12 +218,13 @@ async def engineer_submit(
     request: Request,
     prefect: UpdatePrefectStatusModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
     prefect.operator_id = current_user.user.user_id
     prefect.operator_name = current_user.user.nick_name
     result = await ProjectPrefectService.engineer_submit_review_services(query_db, prefect, current_user)
     return ResponseUtil.success(msg=result.message)
+
 
 # 3. 二级复审操作（通过/驳回）
 @project_controller.put(
@@ -216,7 +235,7 @@ async def engineer_submit(
     dependencies=[
         UserInterfaceAuthDependency('project:prefect:second-review'),
         # Depends(RoleAuthDependency([RoleConstant.SECOND_REVIEWER]))
-    ]
+    ],
 )
 @ValidateFields(validate_model='update_prefect_status')
 @Log(title='项目流程', business_type=BusinessType.UPDATE)
@@ -224,12 +243,13 @@ async def second_review(
     request: Request,
     prefect: UpdatePrefectStatusModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
     prefect.operator_id = current_user.user.user_id
     prefect.operator_name = current_user.user.nick_name
     result = await ProjectPrefectService.second_review_services(query_db, prefect, current_user)
     return ResponseUtil.success(msg=result.message)
+
 
 # 4. 三级复审操作（通过/驳回）
 @project_controller.put(
@@ -240,7 +260,7 @@ async def second_review(
     dependencies=[
         UserInterfaceAuthDependency('project:prefect:third-review'),
         # Depends(RoleAuthDependency([RoleConstant.THIRD_REVIEWER]))
-    ]
+    ],
 )
 @ValidateFields(validate_model='update_prefect_status')
 @Log(title='项目流程', business_type=BusinessType.UPDATE)
@@ -248,12 +268,53 @@ async def third_review(
     request: Request,
     prefect: UpdatePrefectStatusModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
     prefect.operator_id = current_user.user.user_id
     prefect.operator_name = current_user.user.nick_name
     result = await ProjectPrefectService.third_review_services(query_db, prefect, current_user)
     return ResponseUtil.success(msg=result.message)
+
+
+@project_controller.put(
+    '/prefect/second-review/batch',
+    summary='二级复审批量操作',
+    description='仅二级复核可操作，同步记录复审意见',
+    response_model=ResponseBaseModel,
+    dependencies=[
+        UserInterfaceAuthDependency('project:prefect:second-review'),
+    ],
+)
+@Log(title='项目流程', business_type=BusinessType.UPDATE)
+async def batch_second_review(
+    request: Request,
+    batch: BatchUpdatePrefectStatusModel,
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
+) -> Response:
+    result = await ProjectPrefectService.batch_second_review_services(query_db, batch, current_user)
+    return ResponseUtil.success(msg=result.message)
+
+
+@project_controller.put(
+    '/prefect/third-review/batch',
+    summary='三级复审批量操作',
+    description='仅三级复核可操作，同步记录复审意见',
+    response_model=ResponseBaseModel,
+    dependencies=[
+        UserInterfaceAuthDependency('project:prefect:third-review'),
+    ],
+)
+@Log(title='项目流程', business_type=BusinessType.UPDATE)
+async def batch_third_review(
+    request: Request,
+    batch: BatchUpdatePrefectStatusModel,
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
+) -> Response:
+    result = await ProjectPrefectService.batch_third_review_services(query_db, batch, current_user)
+    return ResponseUtil.success(msg=result.message)
+
 
 # 5. 归档人员查询待归档项目
 @project_controller.get(
@@ -264,17 +325,20 @@ async def third_review(
     dependencies=[
         UserInterfaceAuthDependency('system:project:prefect:to-archive'),
         # Depends(RoleAuthDependency([RoleConstant.ARCHIVER]))
-    ]
+    ],
 )
 async def get_to_archive(
     request: Request,
-query_db: Annotated[AsyncSession, DBSessionDependency()],
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
     current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
     page_num: Annotated[int, Query(description='当前页码')] = 1,
-    page_size: Annotated[int, Query(description='每页条数')] = 10
+    page_size: Annotated[int, Query(description='每页条数')] = 10,
 ) -> Response:
-    to_archive_data = await ProjectPrefectService.get_to_archive_projects_services(query_db, page_num, page_size, current_user)
+    to_archive_data = await ProjectPrefectService.get_to_archive_projects_services(
+        query_db, page_num, page_size, current_user
+    )
     return ResponseUtil.success(data=to_archive_data)
+
 
 # 6. 归档人员执行归档
 @project_controller.put(
@@ -285,7 +349,7 @@ query_db: Annotated[AsyncSession, DBSessionDependency()],
     dependencies=[
         UserInterfaceAuthDependency('system:project:prefect:archive'),
         # Depends(RoleAuthDependency([RoleConstant.ARCHIVER]))
-    ]
+    ],
 )
 @ValidateFields(validate_model='update_prefect_status')
 @Log(title='项目流程', business_type=BusinessType.UPDATE)
@@ -293,12 +357,13 @@ async def archive_project(
     request: Request,
     prefect: UpdatePrefectStatusModel,
     query_db: Annotated[AsyncSession, DBSessionDependency()],
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()]
+    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
     prefect.operator_id = current_user.user.user_id
     prefect.operator_name = current_user.user.nick_name
     result = await ProjectPrefectService.archive_project_services(query_db, prefect, current_user)
     return ResponseUtil.success(msg=result.message)
+
 
 # ------------------------------ 审核意见接口 ------------------------------
 # 1. 查询项目所有历史意见
@@ -307,12 +372,12 @@ async def archive_project(
     summary='查询项目历史审核意见',
     description='按时间倒序展示所有节点的审核意见',
     response_model=ResponseBaseModel,
-    dependencies=[UserInterfaceAuthDependency('system:project:opinion:list')]
+    dependencies=[UserInterfaceAuthDependency('system:project:opinion:list')],
 )
 async def get_project_opinions(
     request: Request,
     project_id: Annotated[int, Path(description='项目ID')],
-    query_db: Annotated[AsyncSession, DBSessionDependency()]
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
 ) -> Response:
     opinion_list = await ProjectPrefectOpinionService.get_project_opinions_services(query_db, project_id)
     return ResponseUtil.success(data=opinion_list)

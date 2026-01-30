@@ -1,9 +1,6 @@
-from io import BytesIO
+from typing import Any
 
-import pandas as pd
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Union, List, Dict, Any, Optional
 
 from common.vo import CrudResponseModel
 from exceptions.exception import ServiceException
@@ -11,15 +8,20 @@ from module_admin.dao.enterprise_info_dao import EnterpriseDao
 from module_admin.dao.project_dao import ProjectDao
 from module_admin.dao.project_prefect_dao import ProjectPrefectDao
 from module_admin.dao.project_prefect_opinion_dao import ProjectPrefectOpinionDao
+
 # from module_admin.entity.do.project_do import Project
 from module_admin.entity.do.project_prefect_do import PREFECT_STATUS_ENUM
 from module_admin.entity.vo.project_prefect_vo import ProjectPrefectModel
-from module_admin.entity.vo.project_vo import AddProjectModel, EditProjectModel, ProjectModel, \
-    DeleteProjectModel, ProjectPageModel, ProjectDetailModel
+from module_admin.entity.vo.project_vo import (
+    AddProjectModel,
+    DeleteProjectModel,
+    EditProjectModel,
+    ProjectDetailModel,
+    ProjectModel,
+    ProjectPageModel,
+)
 from module_admin.entity.vo.user_vo import CurrentUserModel
-from module_admin.service.project_prefect_opinion_service import ProjectPrefectOpinionService
 from utils.common_util import CamelCaseUtil
-
 
 # from module_admin.service.dept_service import DeptService
 
@@ -29,8 +31,8 @@ class ProjectService:
 
     @classmethod
     async def get_project_list_services(
-            cls, query_db: AsyncSession, page_object: ProjectPageModel, is_page: bool = False) -> list[
-        dict[str, Any]]:
+        cls, query_db: AsyncSession, page_object: ProjectPageModel, is_page: bool = False
+    ) -> list[dict[str, Any]]:
         """
         获取单位列表信息service
 
@@ -39,17 +41,34 @@ class ProjectService:
         :param is_page: 是否分页查询
         :return: 单位列表信息对象
         """
-        menu_list_result = await ProjectDao.get_project_list(
-            query_db, page_object, is_page
-        )
+        menu_list_result = await ProjectDao.get_project_list(query_db, page_object, is_page)
+
+        return CamelCaseUtil.transform_result(menu_list_result)
+
+    @classmethod
+    async def get_project_list_services1(
+            cls, query_db: AsyncSession, page_object: ProjectPageModel, current_user: CurrentUserModel, is_page: bool = False
+    ) -> list[dict[str, Any]]:
+        """
+        获取单位列表信息service
+
+        :param query_db: orm对象
+        :param page_object: 分页查询参数对象
+        :param is_page: 是否分页查询
+        :param current_user: 用户
+        :return: 单位列表信息对象
+        """
+        # 获取当前用户部门ID
+        roles_list = current_user.roles
+        user_id = current_user.user.user_id
+
+        menu_list_result = await ProjectDao.get_project_list_dao(query_db, page_object,roles_list,user_id, is_page)
 
         return CamelCaseUtil.transform_result(menu_list_result)
 
     # 1. 项目创建人新建项目（同步初始化流程）
     @classmethod
-    async def add_project_services(
-            cls, db: AsyncSession, project: AddProjectModel
-    ) -> CrudResponseModel:
+    async def add_project_services(cls, db: AsyncSession, project: AddProjectModel) -> CrudResponseModel:
         try:
             # 校验：项目创建人角色
             # if current_user["role"] != RoleConstant.PROJECT_CREATOR:
@@ -72,10 +91,10 @@ class ProjectService:
 
             # 2. 同步初始化流程（状态：项目创建人新建）
             prefect_data = {
-                "proId": add_result.pro_id,
-                "currentStatus": PREFECT_STATUS_ENUM["CREATE"],
-                "operatorId": project.create_by,
-                "operatorName": project.create_name
+                'proId': add_result.pro_id,
+                'currentStatus': PREFECT_STATUS_ENUM['CREATE'],
+                'operatorId': project.create_by,
+                'operatorName': project.create_name,
             }
 
             await ProjectPrefectDao.init_prefect_dao(db, ProjectPrefectModel(**prefect_data))
@@ -97,80 +116,71 @@ class ProjectService:
             # 手动构造包含所有字段的字典（完全匹配日志中的字段，无遗漏）
             project_dict = {
                 # 基础标识字段
-                "pro_id": project.pro_id,
-                "project_code": project.project_code,
-                "project_name": project.project_name,
-                "project_type": project.project_type,
-                "ent_id": project.ent_id,
-                "ent_name": project.ent_name,
-
+                'pro_id': project.pro_id,
+                'project_code': project.project_code,
+                'project_name': project.project_name,
+                'project_type': project.project_type,
+                'ent_id': project.ent_id,
+                'ent_name': project.ent_name,
                 # 项目信息字段
-                "service_content": project.service_content,
-                "user_company": project.user_company,
-                "project_manager": project.project_manager,
-                "coordinator": project.coordinator,
-                "contract_signed": project.contract_signed,
-                "document_obtained": project.document_obtained,
-                "contract_amount": project.contract_amount,
-                "contract_discount": project.contract_discount,
-                "deliverable_completed": project.deliverable_completed,
-                "control_price_review": project.control_price_review,
-
+                'service_content': project.service_content,
+                'user_company': project.user_company,
+                'project_manager': project.project_manager,
+                'coordinator': project.coordinator,
+                'contract_signed': project.contract_signed,
+                'document_obtained': project.document_obtained,
+                'contract_amount': project.contract_amount,
+                'contract_discount': project.contract_discount,
+                'deliverable_completed': project.deliverable_completed,
+                'control_price_review': project.control_price_review,
                 # 结算相关字段
-                "settlement_submitted": project.settlement_submitted,
-                "settlement_approved": project.settlement_approved,
-                "invoice_should_amount": project.invoice_should_amount,
-                "payment_applied": project.payment_applied,
-                "payment_month": project.payment_month,
-
+                'settlement_submitted': project.settlement_submitted,
+                'settlement_approved': project.settlement_approved,
+                'invoice_should_amount': project.invoice_should_amount,
+                'payment_applied': project.payment_applied,
+                'payment_month': project.payment_month,
                 # 发票相关字段
-                "invoice_issued": project.invoice_issued,
-                "invoice_date": project.invoice_date,
-                "invoice_issued_amount": project.invoice_issued_amount,
-                "invoice_remaining_amount": project.invoice_remaining_amount,
-
+                'invoice_issued': project.invoice_issued,
+                'invoice_date': project.invoice_date,
+                'invoice_issued_amount': project.invoice_issued_amount,
+                'invoice_remaining_amount': project.invoice_remaining_amount,
                 # 收款相关字段
-                "payment_received": project.payment_received,
-                "payment_received_amount": project.payment_received_amount,
-                "payment_received_date": project.payment_received_date,
-                "payment_remaining_amount": project.payment_remaining_amount,
-                "payment_recovery_rate": project.payment_recovery_rate,
-
+                'payment_received': project.payment_received,
+                'payment_received_amount': project.payment_received_amount,
+                'payment_received_date': project.payment_received_date,
+                'payment_remaining_amount': project.payment_remaining_amount,
+                'payment_recovery_rate': project.payment_recovery_rate,
                 # 对账相关字段
-                "reconciliation_done": project.reconciliation_done,
-                "reconciliation_date": project.reconciliation_date,
-                "reconciliation_voucher": project.reconciliation_voucher,
-
+                'reconciliation_done': project.reconciliation_done,
+                'reconciliation_date': project.reconciliation_date,
+                'reconciliation_voucher': project.reconciliation_voucher,
                 # 佣金相关字段
-                "commission_accrued": project.commission_accrued,
-                "commission_amount": project.commission_amount,
-                "commission_date": project.commission_date,
-
+                'commission_accrued': project.commission_accrued,
+                'commission_amount': project.commission_amount,
+                'commission_date': project.commission_date,
                 # 文件/凭证相关字段
-                "contract_electronic_saved": project.contract_electronic_saved,
-                "contract_file": project.contract_file,
-                "deliverable_electronic_saved": project.deliverable_electronic_saved,
-                "deliverable_file": project.deliverable_file,
-                "document_paper_saved": project.document_paper_saved,
-                "document_save_type": project.document_save_type,
-
+                'contract_electronic_saved': project.contract_electronic_saved,
+                'contract_file': project.contract_file,
+                'deliverable_electronic_saved': project.deliverable_electronic_saved,
+                'deliverable_file': project.deliverable_file,
+                'document_paper_saved': project.document_paper_saved,
+                'document_save_type': project.document_save_type,
                 # 辅助字段
-                "remarks": project.remarks,
-                "start_date": project.start_date,
-                "end_date": project.end_date,
-                "project_budget": project.project_budget,
-                "project_desc": project.project_desc,
-                "status": project.status,
-                "prefect_status": project.prefect_status,  # 需确保模型中max_length=255
-
+                'remarks': project.remarks,
+                'start_date': project.start_date,
+                'end_date': project.end_date,
+                'project_budget': project.project_budget,
+                'project_desc': project.project_desc,
+                'status': project.status,
+                'prefect_status': project.prefect_status,  # 需确保模型中max_length=255
                 # 审计字段
-                "create_by": project.create_by,
-                "create_name": project.create_name,
-                "create_time": project.create_time,
-                "update_by": project.update_by,
-                "update_name": project.update_name,
-                "update_time": project.update_time,
-                "del_flag": project.del_flag
+                'create_by': project.create_by,
+                'create_name': project.create_name,
+                'create_time': project.create_time,
+                'update_by': project.update_by,
+                'update_name': project.update_name,
+                'update_time': project.update_time,
+                'del_flag': project.del_flag,
             }
             # 用包含所有字段的字典初始化模型（解包合法，字段无遗漏）
             result = ProjectModel(**project_dict)
@@ -196,12 +206,11 @@ class ProjectService:
         project_code = await ProjectDao.get_project_by_id(query_db, project_code=page_object.project_code)
 
         if project_info.pro_id:
-            if project_info.prefect_status == PREFECT_STATUS_ENUM["ARCHIVED"]:
+            if project_info.prefect_status == PREFECT_STATUS_ENUM['ARCHIVED']:
                 raise ServiceException(message='项目已归档，不可修改')
 
-            if project_info.project_code != page_object.project_code:
-                if project_code:
-                    raise ServiceException(message=f'项目编号{page_object.project_code}已存在')
+            if project_info.project_code != page_object.project_code and project_code:
+                raise ServiceException(message=f'项目编号{page_object.project_code}已存在')
 
             try:
                 await ProjectDao.edit_project_dao(query_db, edit_menu)
@@ -214,10 +223,10 @@ class ProjectService:
         else:
             raise ServiceException(message='项目不存在')
 
-
-
     @classmethod
-    async def delete_project_services(cls, query_db: AsyncSession, page_object: DeleteProjectModel) -> CrudResponseModel:
+    async def delete_project_services(
+        cls, query_db: AsyncSession, page_object: DeleteProjectModel
+    ) -> CrudResponseModel:
         """
         删除单位信息service
 
@@ -238,8 +247,6 @@ class ProjectService:
                 raise e
         else:
             raise ServiceException(message='传入单位id为空')
-
-
 
     # 2. 修改项目（已归档前均可修改）
     # @classmethod
@@ -275,7 +282,7 @@ class ProjectService:
 
     # 3. 查询项目详情（含流程状态、历史意见）
     @classmethod
-    async def get_project_detail_services(cls, db: AsyncSession, project_id: int) -> Dict[str, Any]:
+    async def get_project_detail_services(cls, db: AsyncSession, project_id: int) -> dict[str, Any]:
         # 1. 查询项目基础信息
         project_info = await ProjectDao.get_project_by_pro_id(db, project_id)
         if not project_info:
@@ -283,11 +290,15 @@ class ProjectService:
 
         # 2. 查询流程状态信息（是否显示开票用章按钮）
         prefect_info = await ProjectPrefectDao.get_prefect_by_project_id(db, project_id)
-        prefect_dict = {
-            "current_status": prefect_info.current_status,
-            "current_status_name": {v: k for k, v in PREFECT_STATUS_ENUM.items()}[prefect_info.current_status],
-            "show_invoice_seal": prefect_info.show_invoice_seal
-        } if prefect_info else {}
+        prefect_dict = (
+            {
+                'current_status': prefect_info.current_status,
+                'current_status_name': {v: k for k, v in PREFECT_STATUS_ENUM.items()}[prefect_info.current_status],
+                'show_invoice_seal': prefect_info.show_invoice_seal,
+            }
+            if prefect_info
+            else {}
+        )
 
         # 3. 查询历史审核意见
         opinion_list = await ProjectPrefectOpinionDao.get_opinions_by_project_id(db, project_id)
@@ -303,11 +314,7 @@ class ProjectService:
         prefect_data = CamelCaseUtil.transform_result(prefect_dict) if prefect_dict else {}
         opinion_data = CamelCaseUtil.transform_result(opinion_list) if opinion_list else []
 
-        return {
-            "projectInfo": project_data,
-            "prefectInfo": prefect_data,
-            "opinionList": opinion_data
-        }
+        return {'projectInfo': project_data, 'prefectInfo': prefect_data, 'opinionList': opinion_data}
 
     # 4. 分页查询项目列表（按角色数据权限过滤）
     # @classmethod

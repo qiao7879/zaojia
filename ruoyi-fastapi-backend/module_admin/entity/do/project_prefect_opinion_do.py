@@ -1,8 +1,10 @@
 from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, Text, DateTime, ForeignKey, CHAR
+
+from sqlalchemy import CHAR, BigInteger, Column, DateTime, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
 
 # 项目流程意见表（独立存储各节点审核意见，支持回溯）
 class ProjectPrefectOpinion(Base):
@@ -10,7 +12,7 @@ class ProjectPrefectOpinion(Base):
     __table_args__ = {
         'comment': '项目流程审核意见表',
         'mysql_charset': 'utf8mb4',
-        'mysql_collate': 'utf8mb4_general_ci'
+        'mysql_collate': 'utf8mb4_general_ci',
     }
 
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment='意见ID')

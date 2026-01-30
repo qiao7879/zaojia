@@ -75,8 +75,8 @@ class ContractService:
 
         contract_id_list = page_object.contract_ids.split(',')
         try:
-            for contract_id in contract_id_list:
-                contract_id = contract_id.strip()
+            for raw_contract_id in contract_id_list:
+                contract_id = raw_contract_id.strip()
                 if not contract_id:
                     continue
                 await ContractDao.delete_contract_dao(query_db, ContractModel(contractId=int(contract_id)))

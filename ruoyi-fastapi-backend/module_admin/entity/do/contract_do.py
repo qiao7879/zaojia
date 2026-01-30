@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Date, DateTime, DECIMAL, Integer, String
+from sqlalchemy import DECIMAL, Column, Date, DateTime, Integer, String
 
 from config.database import Base
 

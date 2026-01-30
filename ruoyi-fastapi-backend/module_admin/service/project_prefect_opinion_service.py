@@ -1,10 +1,10 @@
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Union, List, Dict, Any, Sequence
 
 from exceptions.exception import ServiceException
 from module_admin.dao.project_prefect_dao import ProjectPrefectDao
 from module_admin.dao.project_prefect_opinion_dao import ProjectPrefectOpinionDao
-from module_admin.entity.do.project_prefect_opinion_do import ProjectPrefectOpinion
 
 
 class ProjectPrefectOpinionService:
@@ -25,7 +25,9 @@ class ProjectPrefectOpinionService:
 
     # 2. 查询指定节点的意见（如二级复审意见）
     @classmethod
-    async def get_node_opinions_services(cls, db: AsyncSession, project_id: int, node_code: str) -> list[dict[str, Any]]:
+    async def get_node_opinions_services(
+        cls, db: AsyncSession, project_id: int, node_code: str
+    ) -> list[dict[str, Any]]:
         opinion_list = await ProjectPrefectOpinionDao.get_opinions_by_node(db, project_id, node_code)
         if not opinion_list:
             return []

@@ -1,19 +1,19 @@
-from datetime import datetime
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any, Optional
 import os
+from datetime import datetime
+from typing import Any
+
 from fastapi import UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions.exception import ServiceException
 from module_admin.dao.file_dao import FileDao
-from module_admin.entity.vo.file_vo import FileUploadModel, FileUploadResponseModel, BatchFileUploadResponseModel
+from module_admin.entity.vo.file_vo import BatchFileUploadResponseModel, FileUploadModel, FileUploadResponseModel
+
 # from app.modules.common.file.model.file_vo import (
 #     FileUploadModel, FileUploadResponseModel, BatchFileUploadResponseModel
 # )
 from utils.file_util import FileUtil  # 导入整合后的工具类
 from utils.upload_util import UploadUtil
-
 
 # from app.common.exception.service_exception import ServiceException
 
@@ -24,7 +24,7 @@ class FileService:
     # 1. 单文件上传（核心方法）
     @classmethod
     async def upload_file_services(
-            cls, db: AsyncSession, file: UploadFile, upload_model: FileUploadModel, current_user: Dict[str, Any]
+        cls, db: AsyncSession, file: UploadFile, upload_model: FileUploadModel, current_user: dict[str, Any]
     ) -> FileUploadResponseModel:
         """
         通用单文件上传（基于框架UploadUtil）
@@ -47,25 +47,25 @@ class FileService:
         try:
             await FileUtil.save_file_async(file, storage_path)
         except FileExistsError as e:
-            raise ServiceException(message=f'文件保存失败：{str(e)}')
+            raise ServiceException(message=f'文件保存失败：{e!s}') from e
         except Exception as e:
-            raise ServiceException(message=f'文件保存失败：{str(e)}')
+            raise ServiceException(message=f'文件保存失败：{e!s}') from e
         finally:
             await file.close()
 
         # 1.6 构造文件信息（入库）
         file_info = {
-            "file_name": file.filename,
-            "file_alias": file_alias,
-            "file_type": file.filename.rsplit('.', 1)[-1].lower(),
-            "file_size": file.size,
-            "file_path": storage_path,
-            "file_url": FileUtil.generate_file_url(file_alias, upload_model.business_type),
-            "upload_user_id": current_user["user_id"],
-            "upload_user_name": current_user["user_name"],
-            "business_type": upload_model.business_type,
-            "business_id": upload_model.business_id or "",
-            "status": "0"
+            'file_name': file.filename,
+            'file_alias': file_alias,
+            'file_type': file.filename.rsplit('.', 1)[-1].lower(),
+            'file_size': file.size,
+            'file_path': storage_path,
+            'file_url': FileUtil.generate_file_url(file_alias, upload_model.business_type),
+            'upload_user_id': current_user['user_id'],
+            'upload_user_name': current_user['user_name'],
+            'business_type': upload_model.business_type,
+            'business_id': upload_model.business_id or '',
+            'status': '0',
         }
 
         # 1.7 保存到数据库
@@ -77,15 +77,15 @@ class FileService:
             file_id=db_file.id,
             file_name=file.filename,
             file_alias=file_alias,
-            file_url=file_info["file_url"],
+            file_url=file_info['file_url'],
             file_size=file.size,
-            upload_time=db_file.create_time.strftime("%Y-%m-%d %H:%M:%S")
+            upload_time=db_file.create_time.strftime('%Y-%m-%d %H:%M:%S'),
         )
 
     # 2. 批量文件上传（适配框架工具类）
     @classmethod
     async def batch_upload_file_services(
-            cls, db: AsyncSession, files: List[UploadFile], upload_model: FileUploadModel, current_user: Dict[str, Any]
+        cls, db: AsyncSession, files: list[UploadFile], upload_model: FileUploadModel, current_user: dict[str, Any]
     ) -> BatchFileUploadResponseModel:
         success_count = 0
         fail_count = 0
@@ -96,14 +96,14 @@ class FileService:
             try:
                 if not file or not file.filename:
                     fail_count += 1
-                    fail_details.append(f"第{idx + 1}个文件：文件为空")
+                    fail_details.append(f'第{idx + 1}个文件：文件为空')
                     continue
 
                 # 框架规则：校验文件
                 is_valid, error_msg = FileUtil.validate_file(file)
                 if not is_valid:
                     fail_count += 1
-                    fail_details.append(f"第{idx + 1}个文件（{file.filename}）：{error_msg}")
+                    fail_details.append(f'第{idx + 1}个文件（{file.filename}）：{error_msg}')
                     continue
 
                 # 生成唯一文件名
@@ -116,24 +116,24 @@ class FileService:
 
                 # 构造文件记录
                 file_info = {
-                    "file_name": file.filename,
-                    "file_alias": file_alias,
-                    "file_type": file.filename.rsplit('.', 1)[-1].lower(),
-                    "file_size": file.size,
-                    "file_path": storage_path,
-                    "file_url": FileUtil.generate_file_url(file_alias, upload_model.business_type),
-                    "upload_user_id": current_user["user_id"],
-                    "upload_user_name": current_user["user_name"],
-                    "business_type": upload_model.business_type,
-                    "business_id": upload_model.business_id or "",
-                    "status": "0"
+                    'file_name': file.filename,
+                    'file_alias': file_alias,
+                    'file_type': file.filename.rsplit('.', 1)[-1].lower(),
+                    'file_size': file.size,
+                    'file_path': storage_path,
+                    'file_url': FileUtil.generate_file_url(file_alias, upload_model.business_type),
+                    'upload_user_id': current_user['user_id'],
+                    'upload_user_name': current_user['user_name'],
+                    'business_type': upload_model.business_type,
+                    'business_id': upload_model.business_id or '',
+                    'status': '0',
                 }
                 file_list.append(file_info)
                 success_count += 1
 
             except Exception as e:
                 fail_count += 1
-                fail_details.append(f"第{idx + 1}个文件（{file.filename if file else '未知'}）：{str(e)}")
+                fail_details.append(f'第{idx + 1}个文件（{file.filename if file else "未知"}）：{e!s}')
                 if file:
                     await file.close()
                 continue
@@ -146,24 +146,22 @@ class FileService:
         # 构造返回结果
         file_response_list = [
             FileUploadResponseModel(
-                file_name=info["file_name"],
-                file_alias=info["file_alias"],
-                file_url=info["file_url"],
-                file_size=info["file_size"],
-                upload_time=datetime.fromtimestamp(os.path.getctime(info["file_path"])).strftime("%Y-%m-%d %H:%M:%S")
-            ) for info in file_list
+                file_name=info['file_name'],
+                file_alias=info['file_alias'],
+                file_url=info['file_url'],
+                file_size=info['file_size'],
+                upload_time=datetime.fromtimestamp(os.path.getctime(info['file_path'])).strftime('%Y-%m-%d %H:%M:%S'),
+            )
+            for info in file_list
         ]
 
         return BatchFileUploadResponseModel(
-            success_count=success_count,
-            fail_count=fail_count,
-            file_list=file_response_list,
-            fail_details=fail_details
+            success_count=success_count, fail_count=fail_count, file_list=file_response_list, fail_details=fail_details
         )
 
     # 3. 文件下载（复用框架异步生成文件逻辑）
     @classmethod
-    async def download_file_services(cls, db: AsyncSession, file_id: int) -> Dict[str, Any]:
+    async def download_file_services(cls, db: AsyncSession, file_id: int) -> dict[str, Any]:
         # 查询文件记录
         db_file = await FileDao.get_file_by_id(db, file_id)
         if not db_file:
@@ -175,8 +173,8 @@ class FileService:
 
         # 返回文件信息（包含异步生成器）
         return {
-            "file_path": db_file.file_path,
-            "file_name": db_file.file_name,
-            "file_type": db_file.file_type,
-            "file_generator": FileUtil.generate_file_async(db_file.file_path)  # 框架异步生成器
+            'file_path': db_file.file_path,
+            'file_name': db_file.file_name,
+            'file_type': db_file.file_type,
+            'file_generator': FileUtil.generate_file_async(db_file.file_path),  # 框架异步生成器
         }

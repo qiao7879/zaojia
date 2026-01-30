@@ -2,7 +2,6 @@ import io
 import os
 import re
 from collections.abc import Generator, Sequence
-from datetime import datetime
 from typing import Any, Literal, Union, overload
 
 import pandas as pd

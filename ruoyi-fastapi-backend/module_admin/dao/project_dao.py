@@ -1,35 +1,58 @@
+from collections.abc import Sequence
+from typing import Any, Union
+
+from sqlalchemy import Row, RowMapping, and_, delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, and_, func, desc, insert, Row, RowMapping
-from typing import Union, List, Dict, Any, Sequence
 
 from common.vo import PageModel
 from module_admin.entity.do.menu_do import SysMenu
 from module_admin.entity.do.project_do import Project
 from module_admin.entity.do.project_prefect_do import ProjectPrefect
-from module_admin.entity.do.role_do import SysRole, SysRoleMenu
+from module_admin.entity.do.role_do import SysRole
 from module_admin.entity.do.user_do import SysUser, SysUserRole
-from module_admin.entity.vo.project_vo import AddProjectModel, EditProjectModel, ProjectQueryModel, ProjectModel, \
-    ProjectPageModel
+from module_admin.entity.vo.project_vo import (
+    ProjectModel,
+    ProjectPageModel,
+)
 from utils.common_util import CamelCaseUtil
-from utils.page_util import PageUtil
-
 
 
 class ProjectDao:
     """项目主表数据访问层"""
 
     @classmethod
-    async def get_project_list(cls, db: AsyncSession, page_object: ProjectPageModel, is_page: bool = False
-        ) -> Union[PageModel, list[dict[str, Any]]]:
+    async def get_project_list_dao(
+        cls, db: AsyncSession, page_object: ProjectPageModel, role: list ,user_id: int, is_page: bool = True
+    ) -> Union[PageModel, list[dict[str, Any]]]:
         """
-            根据查询参数获取岗位列表信息
-
-            :param db: orm对象
-            :param page_object: 查询参数对象
-            :param is_page: 是否开启分页
-            :return: 岗位列表信息对象
+        根据查询参数获取项目列表信息
+        :param db: orm对象
+        :param page_object: 查询参数对象
+        :param user_id: 查询参数对象
+        :param role: 查询参数对象
+        :param is_page: 是否分页查询
+        :return: 项目列表信息对象
         """
+        if is_page:
+            if role in ['admin', 'a_admin']:
+                pass
+            elif role in []:
+                pass
 
+
+
+    @classmethod
+    async def get_project_list(
+        cls, db: AsyncSession, page_object: ProjectPageModel, is_page: bool = False
+    ) -> Union[PageModel, list[dict[str, Any]]]:
+        """
+        根据查询参数获取岗位列表信息
+
+        :param db: orm对象
+        :param page_object: 查询参数对象
+        :param is_page: 是否开启分页
+        :return: 岗位列表信息对象
+        """
 
         status_list: list[str] = []
         if page_object.prefect_status:
@@ -135,11 +158,14 @@ class ProjectDao:
     @classmethod
     async def get_project_by_id(cls, db: AsyncSession, project_code: str) -> Union[Project, None]:
         result = (
-            await db.execute(
-                select(Project)
-                .where(and_(Project.project_code == project_code, Project.del_flag == '0'))
+            (
+                await db.execute(
+                    select(Project).where(and_(Project.project_code == project_code, Project.del_flag == '0'))
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         return result
 
     # 3. 按pro_id查询项目详情
@@ -147,7 +173,6 @@ class ProjectDao:
     async def get_project_by_pro_id(cls, db: AsyncSession, pro_id: int) -> Union[Project, None]:
         result = await db.get(Project, pro_id)
         return result
-
 
     # @classmethod
     # async def get_project_page_dao(
@@ -183,7 +208,7 @@ class ProjectDao:
         )
 
     @classmethod
-    async def batch_add_project_dao(cls, db: AsyncSession, project_list: List[Dict[str, Any]]) -> None:
+    async def batch_add_project_dao(cls, db: AsyncSession, project_list: list[dict[str, Any]]) -> None:
         """
         批量新增项目（基于Excel解析后的项目列表）
         :param db: 数据库
@@ -198,7 +223,7 @@ class ProjectDao:
     # 新增：批量初始化流程（与批量项目对应）
     # ------------------------------
     @classmethod
-    async def batch_init_prefect_dao(cls, db: AsyncSession, prefect_list: List[Dict[str, Any]]) -> None:
+    async def batch_init_prefect_dao(cls, db: AsyncSession, prefect_list: list[dict[str, Any]]) -> None:
         """
         批量初始化项目流程（每个项目对应一条流程记录，状态：创建人新建）
         :param db: 数据库
@@ -212,8 +237,9 @@ class ProjectDao:
     # 新增：批量查询项目编号（校验Excel中项目编号是否已存在）
     # ------------------------------
     @classmethod
-    async def batch_get_project_by_codes(cls, db: AsyncSession, project_codes: List[str]) -> Sequence[
-        Row[Any] | RowMapping | Any]:
+    async def batch_get_project_by_codes(
+        cls, db: AsyncSession, project_codes: list[str]
+    ) -> Sequence[Row[Any] | RowMapping | Any]:
         """
         批量查询已存在的项目编号（用于Excel导入时的唯一性校验）
         :return: 已存在的项目编号列表
@@ -221,9 +247,12 @@ class ProjectDao:
         if not project_codes:
             return []
         result = (
-            await db.execute(
-                select(Project.project_code)
-                .where(Project.project_code.in_(project_codes), Project.del_flag == '0')
+            (
+                await db.execute(
+                    select(Project.project_code).where(Project.project_code.in_(project_codes), Project.del_flag == '0')
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return result  # 返回已存在的项目编号列表

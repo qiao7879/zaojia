@@ -1,12 +1,10 @@
+from typing import Any
+
+from sqlalchemy import and_, delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, and_, desc, delete
-from typing import Union, List, Dict, Any, Sequence
 
-from typing import Annotated
-
-from common.aspect.db_seesion import DBSessionDependency
 from module_admin.entity.do.project_prefect_opinion_do import ProjectPrefectOpinion
-from module_admin.entity.vo.project_prefect_opinion_vo import AddPrefectOpinionModel, ProjectPrefectOpinionModel
+from module_admin.entity.vo.project_prefect_opinion_vo import ProjectPrefectOpinionModel
 
 
 class ProjectPrefectOpinionDao:
@@ -17,7 +15,6 @@ class ProjectPrefectOpinionDao:
     async def add_opinion_dao(cls, db: AsyncSession, opinion: dict) -> None:
         db_opinion = ProjectPrefectOpinion(**opinion)
         db.add(db_opinion)
-
 
     @classmethod
     async def delete_ent_dao(cls, db: AsyncSession, opinion: ProjectPrefectOpinionModel) -> None:
@@ -32,15 +29,18 @@ class ProjectPrefectOpinionDao:
 
     # 2. 按项目ID查询所有历史意见（按时间倒序）
     @classmethod
-    async def get_opinions_by_project_id(cls, db: AsyncSession, project_id: int) -> List[Dict[str, Any]]:
+    async def get_opinions_by_project_id(cls, db: AsyncSession, project_id: int) -> list[dict[str, Any]]:
         result = (
-            await db.execute(
-                select(ProjectPrefectOpinion)
-                .where(
-                    and_(ProjectPrefectOpinion.project_id == project_id, ProjectPrefectOpinion.del_flag == '0'))
-                .order_by(desc(ProjectPrefectOpinion.create_time))
+            (
+                await db.execute(
+                    select(ProjectPrefectOpinion)
+                    .where(and_(ProjectPrefectOpinion.project_id == project_id, ProjectPrefectOpinion.del_flag == '0'))
+                    .order_by(desc(ProjectPrefectOpinion.create_time))
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not result:
             return []
         pydantic_rows = [ProjectPrefectOpinionModel.model_validate(orm_obj) for orm_obj in result]
@@ -48,19 +48,22 @@ class ProjectPrefectOpinionDao:
 
     # 3. 按流程节点查询意见（如查询二级复审的所有意见）
     @classmethod
-    async def get_opinions_by_node(cls, db: AsyncSession, project_id: int, node_code: str) -> List[Dict[str, Any]]:
+    async def get_opinions_by_node(cls, db: AsyncSession, project_id: int, node_code: str) -> list[dict[str, Any]]:
         result = (
-            await db.execute(
-                select(ProjectPrefectOpinion)
-                .where(
-                    and_(
-                        ProjectPrefectOpinion.project_id == project_id,
-                        ProjectPrefectOpinion.node_code == node_code,
-                        ProjectPrefectOpinion.del_flag == '0'
+            (
+                await db.execute(
+                    select(ProjectPrefectOpinion).where(
+                        and_(
+                            ProjectPrefectOpinion.project_id == project_id,
+                            ProjectPrefectOpinion.node_code == node_code,
+                            ProjectPrefectOpinion.del_flag == '0',
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not result:
             return []
         pydantic_rows = [ProjectPrefectOpinionModel.model_validate(orm_obj) for orm_obj in result]

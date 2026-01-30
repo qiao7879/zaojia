@@ -59,15 +59,11 @@ class AddContractModel(ContractModel):
     新增合同请求模型
     """
 
-    pass
-
 
 class EditContractModel(ContractModel):
     """
     修改合同请求模型
     """
-
-    pass
 
 
 class ContractPageQueryModel(ContractModel):

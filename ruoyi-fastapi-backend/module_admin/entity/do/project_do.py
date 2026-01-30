@@ -1,5 +1,6 @@
 from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, DateTime, DECIMAL, CHAR, Text, Integer, FLOAT
+
+from sqlalchemy import CHAR, FLOAT, Column, DateTime, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 # 声明基类（根据你的项目实际导入方式调整）
@@ -8,11 +9,7 @@ Base = declarative_base()
 
 class Project(Base):
     __tablename__ = 'project'
-    __table_args__ = {
-        'comment': '项目主表',
-        'mysql_charset': 'utf8mb4',
-        'mysql_collate': 'utf8mb4_general_ci'
-    }
+    __table_args__ = {'comment': '项目主表', 'mysql_charset': 'utf8mb4', 'mysql_collate': 'utf8mb4_general_ci'}
 
     # 基础字段（保留示例中的核心基础字段）
     pro_id = Column(Integer, primary_key=True, autoincrement=True, comment='项目ID（主键）')

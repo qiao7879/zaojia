@@ -73,8 +73,6 @@ class AddEnterpriseModel(EnterpriseModel):
     添加企业信息请求模型
     """
 
-    pass
-
 
 class EditEnterpriseModel(EnterpriseModel):
     """
@@ -89,6 +87,7 @@ class EnterpriseDetailModel(BaseModel):
     """
     企业信息详情响应模型
     """
+
     enterprise_info: Optional[EnterpriseModel] = Field(None, description='企业信息')
 
 
@@ -96,6 +95,7 @@ class EnterprisePageModel(EnterpriseModel):
     """
     企业信息分页响应模型
     """
+
     page_num: int = Field(default=1, description='当前页码')
     page_size: int = Field(default=10, description='每页记录数')
 
@@ -113,5 +113,6 @@ class DeleteEnterpriseModel(BaseModel):
     """
     删除企业信息请求模型
     """
+
     model_config = ConfigDict(alias_generator=to_camel)
     ent_ids: str = Field(description='企业ID列表')

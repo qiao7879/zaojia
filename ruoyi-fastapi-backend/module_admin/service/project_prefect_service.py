@@ -1,15 +1,13 @@
-from datetime import datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Union, List, Dict, Any
 
 from common.vo import CrudResponseModel
 from exceptions.exception import ServiceException
 from module_admin.dao.project_prefect_dao import ProjectPrefectDao
 from module_admin.dao.project_prefect_opinion_dao import ProjectPrefectOpinionDao
 from module_admin.entity.do.project_prefect_do import PREFECT_STATUS_ENUM
-from module_admin.entity.vo.project_prefect_opinion_vo import AddPrefectOpinionModel
-from module_admin.entity.vo.project_prefect_vo import UpdatePrefectStatusModel
+from module_admin.entity.vo.project_prefect_vo import BatchUpdatePrefectStatusModel, UpdatePrefectStatusModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
 
 
@@ -19,32 +17,32 @@ class ProjectPrefectService:
     # 1. 项目创建人下发项目至工程师
     @classmethod
     async def creator_send_to_engineer_services(
-            cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
+        cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
     ) -> CrudResponseModel:
         try:
             # 校验：角色（仅项目创建人）
-            if current_user.roles[0] != 'a_admin' or current_user.roles[0] != 'admin':
+            if current_user.roles not in ('a_admin','admin') :
                 raise ServiceException(message='仅项目创建人可下发项目至工程师')
 
             # 校验：当前流程状态（必须是"项目创建人新建"）
             exist_prefect = await ProjectPrefectDao.get_prefect_by_project_id(db, prefect.pro_id)
-            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM["CREATE"]:
+            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM['CREATE']:
                 raise ServiceException(message='当前流程状态不允许下发，仅新建项目可下发')
 
             # 1. 更新流程状态（目标状态：工程师修改）
-            prefect.target_status = PREFECT_STATUS_ENUM["ENGINEER_EDIT"]
+            prefect.target_status = PREFECT_STATUS_ENUM['ENGINEER_EDIT']
             await ProjectPrefectDao.update_prefect_status_dao(db, prefect)
 
             # 2. 新增审核意见（项目创建人下发意见）
             opinion_data = {
-                "project_id": prefect.pro_id,
-                "prefect_id": exist_prefect.id,
-                "node_code": PREFECT_STATUS_ENUM["CREATE"],
-                "node_name": "项目创建人下发",
-                "opinion_content": prefect.opinion_content,
-                "operator_id": current_user.user.user_id,
-                "operator_name": current_user.user.nick_name,
-                "operator_role": current_user.roles[0]
+                'project_id': prefect.pro_id,
+                'prefect_id': exist_prefect.id,
+                'node_code': PREFECT_STATUS_ENUM['CREATE'],
+                'node_name': '项目创建人下发',
+                'opinion_content': prefect.opinion_content,
+                'operator_id': current_user.user.user_id,
+                'operator_name': current_user.user.nick_name,
+                'operator_role': 'a_admin',
             }
             await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
 
@@ -57,33 +55,33 @@ class ProjectPrefectService:
     # # 2. 工程师修改后提交审核（目标状态：二级复审）
     @classmethod
     async def engineer_submit_review_services(
-            cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
+        cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
     ) -> CrudResponseModel:
         try:
             # 校验：角色（仅工程师）
-            if current_user.roles[0] not in ("engineer", "admin"):
-            # if current_user.roles[0] != "engineer" or current_user.roles[0] != 'admin':
+            if current_user.roles not in ('engineer', 'admin'):
+                # if current_user.roles[0] != "engineer" or current_user.roles[0] != 'admin':
                 raise ServiceException(message='仅工程师可提交审核')
 
             # 校验：当前流程状态（必须是"工程师修改中"）
             exist_prefect = await ProjectPrefectDao.get_prefect_by_project_id(db, prefect.pro_id)
-            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM["ENGINEER_EDIT"]:
+            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM['ENGINEER_EDIT']:
                 raise ServiceException(message='当前流程状态不允许提交，仅工程师修改中可提交')
 
             # 1. 更新流程状态（目标状态：二级复审，自动显示开票用章按钮）
-            prefect.target_status = PREFECT_STATUS_ENUM["SECOND_REVIEW"]
+            prefect.target_status = PREFECT_STATUS_ENUM['SECOND_REVIEW']
             await ProjectPrefectDao.update_prefect_status_dao(db, prefect)
 
             # 2. 新增审核意见（工程师修改说明）
             opinion_data = {
-                "project_id": prefect.pro_id,
-                "prefect_id": exist_prefect.id,
-                "node_code": PREFECT_STATUS_ENUM["ENGINEER_EDIT"],
-                "node_name": "工程师修改",
-                "opinion_content": prefect.opinion_content,
-                "operator_id": current_user.user.user_id,
-                "operator_name": current_user.user.nick_name,
-                "operator_role": current_user.roles[0]
+                'project_id': prefect.pro_id,
+                'prefect_id': exist_prefect.id,
+                'node_code': PREFECT_STATUS_ENUM['ENGINEER_EDIT'],
+                'node_name': '工程师修改',
+                'opinion_content': prefect.opinion_content,
+                'operator_id': current_user.user.user_id,
+                'operator_name': current_user.user.nick_name,
+                'operator_role': 'engineer',
             }
             await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
 
@@ -92,25 +90,25 @@ class ProjectPrefectService:
         except Exception as e:
             await db.rollback()
             raise e
+
     #
     # 3. 二级复审操作（通过→三级复审；驳回→工程师）
     @classmethod
     async def second_review_services(
-            cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
+        cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
     ) -> CrudResponseModel:
         try:
             # 校验：角色（仅二级复核）
-            if current_user.roles[0] not in ("ejfh", "admin"):
+            if current_user.roles[0] not in ('ejfh', 'admin'):
                 raise ServiceException(message='仅二级复核可执行此操作')
 
             # 校验：当前流程状态（必须是"二级复审"）
             exist_prefect = await ProjectPrefectDao.get_prefect_by_project_id(db, prefect.pro_id)
-            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM["SECOND_REVIEW"]:
+            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM['SECOND_REVIEW']:
                 raise ServiceException(message='当前流程状态不允许复审，仅二级复审中可操作')
 
             # 校验：目标状态合法（仅允许三级复审/驳回至工程师）
-            if prefect.target_status not in [PREFECT_STATUS_ENUM["THIRD_REVIEW"],
-                                             PREFECT_STATUS_ENUM["ENGINEER_EDIT"]]:
+            if prefect.target_status not in [PREFECT_STATUS_ENUM['THIRD_REVIEW'], PREFECT_STATUS_ENUM['ENGINEER_EDIT']]:
                 raise ServiceException(message='二级复审仅允许流转至三级复审或驳回至工程师')
 
             # 1. 更新流程状态
@@ -118,20 +116,23 @@ class ProjectPrefectService:
 
             # 2. 新增审核意见（二级复审意见）
             opinion_data = {
-                "project_id": prefect.pro_id,
-                "prefect_id": exist_prefect.id,
-                "node_code": PREFECT_STATUS_ENUM["SECOND_REVIEW"],
-                "node_name": "二级复审",
-                "opinion_content": prefect.opinion_content,
-                "operator_id": current_user.user.user_id,
-                "operator_name": current_user.user.nick_name,
-                "operator_role": current_user.roles[0]
+                'project_id': prefect.pro_id,
+                'prefect_id': exist_prefect.id,
+                'node_code': PREFECT_STATUS_ENUM['SECOND_REVIEW'],
+                'node_name': '二级复审',
+                'opinion_content': prefect.opinion_content,
+                'operator_id': current_user.user.user_id,
+                'operator_name': current_user.user.nick_name,
+                'operator_role': current_user.roles[0],
             }
             await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
 
             await db.commit()
-            msg = "二级复审通过，流转至三级复审" if prefect.target_status == PREFECT_STATUS_ENUM[
-                "THIRD_REVIEW"] else "二级复审驳回至工程师"
+            msg = (
+                '二级复审通过，流转至三级复审'
+                if prefect.target_status == PREFECT_STATUS_ENUM['THIRD_REVIEW']
+                else '二级复审驳回至工程师'
+            )
             return CrudResponseModel(is_success=True, message=msg)
         except Exception as e:
             await db.rollback()
@@ -140,20 +141,20 @@ class ProjectPrefectService:
     # 4. 三级复审操作（通过→待归档；驳回→工程师）
     @classmethod
     async def third_review_services(
-            cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
+        cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
     ) -> CrudResponseModel:
         try:
             # 校验：角色（仅三级复核）
-            if current_user.roles[0] not in ("sjfh", "admin"):
+            if current_user.roles[0] not in ('sjfh', 'admin'):
                 raise ServiceException(message='仅三级复核可执行此操作')
 
             # 校验：当前流程状态（必须是"三级复审"）
             exist_prefect = await ProjectPrefectDao.get_prefect_by_project_id(db, prefect.pro_id)
-            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM["THIRD_REVIEW"]:
+            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM['THIRD_REVIEW']:
                 raise ServiceException(message='当前流程状态不允许复审，仅三级复审中可操作')
 
             # 校验：目标状态合法（仅允许待归档/驳回至工程师）
-            if prefect.target_status not in [PREFECT_STATUS_ENUM["TO_ARCHIVE"], PREFECT_STATUS_ENUM["ENGINEER_EDIT"]]:
+            if prefect.target_status not in [PREFECT_STATUS_ENUM['TO_ARCHIVE'], PREFECT_STATUS_ENUM['ENGINEER_EDIT']]:
                 raise ServiceException(message='三级复审仅允许流转至待归档或驳回至工程师')
 
             # 1. 更新流程状态
@@ -161,20 +162,23 @@ class ProjectPrefectService:
 
             # 2. 新增审核意见（三级复审意见）
             opinion_data = {
-                "project_id": prefect.pro_id,
-                "prefect_id": exist_prefect.id,
-                "node_code": PREFECT_STATUS_ENUM["THIRD_REVIEW"],
-                "node_name": "三级复审",
-                "opinion_content": prefect.opinion_content,
-                "operator_id": current_user.user.user_id,
-                "operator_name": current_user.user.nick_name,
-                "operator_role": current_user.roles[0]
+                'project_id': prefect.pro_id,
+                'prefect_id': exist_prefect.id,
+                'node_code': PREFECT_STATUS_ENUM['THIRD_REVIEW'],
+                'node_name': '三级复审',
+                'opinion_content': prefect.opinion_content,
+                'operator_id': current_user.user.user_id,
+                'operator_name': current_user.user.nick_name,
+                'operator_role': current_user.roles[0],
             }
             await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
 
             await db.commit()
-            msg = "三级复审通过，流转至待归档" if prefect.target_status == PREFECT_STATUS_ENUM[
-                "TO_ARCHIVE"] else "三级复审驳回至工程师"
+            msg = (
+                '三级复审通过，流转至待归档'
+                if prefect.target_status == PREFECT_STATUS_ENUM['TO_ARCHIVE']
+                else '三级复审驳回至工程师'
+            )
             return CrudResponseModel(is_success=True, message=msg)
         except Exception as e:
             await db.rollback()
@@ -183,32 +187,32 @@ class ProjectPrefectService:
     # 5. 归档人员执行归档（待归档→已归档，流程结束）
     @classmethod
     async def archive_project_services(
-            cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
+        cls, db: AsyncSession, prefect: UpdatePrefectStatusModel, current_user: CurrentUserModel
     ) -> CrudResponseModel:
         try:
             # 校验：角色（仅归档人员）
-            if current_user.roles[0] not in ("archivist", "admin"):
+            if current_user.roles[0] not in ('archivist', 'admin'):
                 raise ServiceException(message='仅归档人员可执行归档操作')
 
             # 校验：当前流程状态（必须是"待归档"）
             exist_prefect = await ProjectPrefectDao.get_prefect_by_project_id(db, prefect.pro_id)
-            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM["TO_ARCHIVE"]:
+            if not exist_prefect or exist_prefect.current_status != PREFECT_STATUS_ENUM['TO_ARCHIVE']:
                 raise ServiceException(message='当前流程状态不允许归档，仅待归档项目可操作')
 
             # 1. 更新流程状态（目标状态：已归档）
-            prefect.target_status = PREFECT_STATUS_ENUM["ARCHIVED"]
+            prefect.target_status = PREFECT_STATUS_ENUM['ARCHIVED']
             await ProjectPrefectDao.update_prefect_status_dao(db, prefect)
 
             # 2. 新增审核意见（归档意见）
             opinion_data = {
-                "project_id": prefect.pro_id,
-                "prefect_id": exist_prefect.id,
-                "node_code": PREFECT_STATUS_ENUM["TO_ARCHIVE"],
-                "node_name": "归档操作",
-                "opinion_content": prefect.opinion_content,
-                "operator_id": current_user.user.user_id,
-                "operator_name": current_user.user.nick_name,
-                "operator_role": current_user.roles[0]
+                'project_id': prefect.pro_id,
+                'prefect_id': exist_prefect.id,
+                'node_code': PREFECT_STATUS_ENUM['TO_ARCHIVE'],
+                'node_name': '归档操作',
+                'opinion_content': prefect.opinion_content,
+                'operator_id': current_user.user.user_id,
+                'operator_name': current_user.user.nick_name,
+                'operator_role': current_user.roles[0],
             }
             await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
 
@@ -221,11 +225,135 @@ class ProjectPrefectService:
     # 6. 归档人员查询待归档项目列表
     @classmethod
     async def get_to_archive_projects_services(
-            cls, db: AsyncSession, page_num: int, page_size: int, current_user: CurrentUserModel
-    ) -> Dict[str, Any]:
+        cls, db: AsyncSession, page_num: int, page_size: int, current_user: CurrentUserModel
+    ) -> dict[str, Any]:
         # 校验：角色（仅归档人员）
-        if current_user.roles[0] not in ("archivist", "admin"):
+        if current_user.roles[0] not in ('archivist', 'admin'):
             raise ServiceException(message='仅归档人员可查看待归档项目')
 
         to_archive_page = await ProjectPrefectDao.get_to_archive_projects_dao(db, page_num, page_size)
         return to_archive_page.model_dump(by_alias=True) if hasattr(to_archive_page, 'model_dump') else to_archive_page
+
+    @classmethod
+    async def batch_second_review_services(
+        cls, db: AsyncSession, batch: BatchUpdatePrefectStatusModel, current_user: CurrentUserModel
+    ) -> CrudResponseModel:
+        try:
+            if current_user.roles[0] not in ('ejfh', 'admin'):
+                raise ServiceException(message='仅二级复核可执行此操作')
+
+            if batch.current_status != PREFECT_STATUS_ENUM['SECOND_REVIEW']:
+                raise ServiceException(message='当前流程状态不允许批量复审，仅二级复审中可操作')
+
+            if batch.target_status not in [PREFECT_STATUS_ENUM['THIRD_REVIEW'], PREFECT_STATUS_ENUM['ENGINEER_EDIT']]:
+                raise ServiceException(message='二级复审仅允许流转至三级复审或驳回至工程师')
+
+            prefect_map = await ProjectPrefectDao.get_prefects_by_project_ids(db, batch.pro_ids)
+            missing_ids = [pid for pid in batch.pro_ids if pid not in prefect_map]
+            if missing_ids:
+                raise ServiceException(message=f'存在未初始化流程的项目：{missing_ids[:10]}')
+
+            invalid_ids = [
+                pid
+                for pid, prefect in prefect_map.items()
+                if prefect.current_status != PREFECT_STATUS_ENUM['SECOND_REVIEW']
+            ]
+            if invalid_ids:
+                raise ServiceException(message=f'存在非二级复审状态的项目：{invalid_ids[:10]}')
+
+            for pid in batch.pro_ids:
+                exist_prefect = prefect_map[pid]
+                prefect = UpdatePrefectStatusModel(
+                    pro_id=pid,
+                    current_status=batch.current_status,
+                    target_status=batch.target_status,
+                    opinion_content=batch.opinion_content,
+                )
+                prefect.operator_id = current_user.user.user_id
+                prefect.operator_name = current_user.user.nick_name
+                await ProjectPrefectDao.update_prefect_status_dao(db, prefect)
+
+                opinion_data = {
+                    'project_id': pid,
+                    'prefect_id': exist_prefect.id,
+                    'node_code': PREFECT_STATUS_ENUM['SECOND_REVIEW'],
+                    'node_name': '二级复审',
+                    'opinion_content': batch.opinion_content,
+                    'operator_id': current_user.user.user_id,
+                    'operator_name': current_user.user.nick_name,
+                    'operator_role': current_user.roles[0],
+                }
+                await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
+
+            await db.commit()
+            msg = (
+                '批量二级复审通过，流转至三级复审'
+                if batch.target_status == PREFECT_STATUS_ENUM['THIRD_REVIEW']
+                else '批量二级复审驳回至工程师'
+            )
+            return CrudResponseModel(is_success=True, message=msg)
+        except Exception as e:
+            await db.rollback()
+            raise e
+
+    @classmethod
+    async def batch_third_review_services(
+        cls, db: AsyncSession, batch: BatchUpdatePrefectStatusModel, current_user: CurrentUserModel
+    ) -> CrudResponseModel:
+        try:
+            if current_user.roles[0] not in ('sjfh', 'admin'):
+                raise ServiceException(message='仅三级复核可执行此操作')
+
+            if batch.current_status != PREFECT_STATUS_ENUM['THIRD_REVIEW']:
+                raise ServiceException(message='当前流程状态不允许批量复审，仅三级复审中可操作')
+
+            if batch.target_status not in [PREFECT_STATUS_ENUM['TO_ARCHIVE'], PREFECT_STATUS_ENUM['ENGINEER_EDIT']]:
+                raise ServiceException(message='三级复审仅允许流转至待归档或驳回至工程师')
+
+            prefect_map = await ProjectPrefectDao.get_prefects_by_project_ids(db, batch.pro_ids)
+            missing_ids = [pid for pid in batch.pro_ids if pid not in prefect_map]
+            if missing_ids:
+                raise ServiceException(message=f'存在未初始化流程的项目：{missing_ids[:10]}')
+
+            invalid_ids = [
+                pid
+                for pid, prefect in prefect_map.items()
+                if prefect.current_status != PREFECT_STATUS_ENUM['THIRD_REVIEW']
+            ]
+            if invalid_ids:
+                raise ServiceException(message=f'存在非三级复审状态的项目：{invalid_ids[:10]}')
+
+            for pid in batch.pro_ids:
+                exist_prefect = prefect_map[pid]
+                prefect = UpdatePrefectStatusModel(
+                    pro_id=pid,
+                    current_status=batch.current_status,
+                    target_status=batch.target_status,
+                    opinion_content=batch.opinion_content,
+                )
+                prefect.operator_id = current_user.user.user_id
+                prefect.operator_name = current_user.user.nick_name
+                await ProjectPrefectDao.update_prefect_status_dao(db, prefect)
+
+                opinion_data = {
+                    'project_id': pid,
+                    'prefect_id': exist_prefect.id,
+                    'node_code': PREFECT_STATUS_ENUM['THIRD_REVIEW'],
+                    'node_name': '三级复审',
+                    'opinion_content': batch.opinion_content,
+                    'operator_id': current_user.user.user_id,
+                    'operator_name': current_user.user.nick_name,
+                    'operator_role': current_user.roles[0],
+                }
+                await ProjectPrefectOpinionDao.add_opinion_dao(db, opinion_data)
+
+            await db.commit()
+            msg = (
+                '批量三级复审通过，流转至待归档'
+                if batch.target_status == PREFECT_STATUS_ENUM['TO_ARCHIVE']
+                else '批量三级复审驳回至工程师'
+            )
+            return CrudResponseModel(is_success=True, message=msg)
+        except Exception as e:
+            await db.rollback()
+            raise e

@@ -52,9 +52,25 @@ export function secondReviewProject(data) {
   })
 }
 
+export function secondReviewProjectBatch(data) {
+  return request({
+    url: '/system/project/prefect/second-review/batch',
+    method: 'put',
+    data
+  })
+}
+
 export function thirdReviewProject(data) {
   return request({
     url: '/system/project/prefect/third-review',
+    method: 'put',
+    data
+  })
+}
+
+export function thirdReviewProjectBatch(data) {
+  return request({
+    url: '/system/project/prefect/third-review/batch',
     method: 'put',
     data
   })

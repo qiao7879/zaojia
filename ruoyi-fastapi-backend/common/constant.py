@@ -4,28 +4,28 @@ from config.env import DataBaseConfig
 class FileConstant:
     # 文件大小限制（单位：MB）
     FILE_SIZE_LIMIT = {
-        "DEFAULT": 10,  # 默认最大10MB
-        "EXCEL": 5,  # Excel文件最大5MB
-        "IMAGE": 2,  # 图片最大2MB
-        "DOCUMENT": 20  # 文档（PDF/Word）最大20MB
+        'DEFAULT': 10,  # 默认最大10MB
+        'EXCEL': 5,  # Excel文件最大5MB
+        'IMAGE': 2,  # 图片最大2MB
+        'DOCUMENT': 20,  # 文档（PDF/Word）最大20MB
     }
 
     # 文件类型白名单（允许上传的文件后缀）
     FILE_TYPE_WHITELIST = {
-        "ALL": [".xlsx", ".xls", ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".gif"],
-        "EXCEL": [".xlsx", ".xls"],
-        "IMAGE": [".jpg", ".jpeg", ".png", ".gif"],
-        "DOCUMENT": [".pdf", ".doc", ".docx"]
+        'ALL': ['.xlsx', '.xls', '.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.gif'],
+        'EXCEL': ['.xlsx', '.xls'],
+        'IMAGE': ['.jpg', '.jpeg', '.png', '.gif'],
+        'DOCUMENT': ['.pdf', '.doc', '.docx'],
     }
 
     # 文件存储路径（可根据实际部署调整）
     FILE_STORAGE_PATH = {
-        "LOCAL": "/opt/app/upload/",  # 本地存储路径
-        "TEMP": "/opt/app/upload/temp/"  # 临时文件路径
+        'LOCAL': '/opt/app/upload/',  # 本地存储路径
+        'TEMP': '/opt/app/upload/temp/',  # 临时文件路径
     }
 
     # 文件访问前缀（前端访问URL前缀）
-    FILE_ACCESS_PREFIX = "http://127.0.0.1:8000/api/v1/common/file/download/"
+    FILE_ACCESS_PREFIX = 'http://127.0.0.1:8000/api/v1/common/file/download/'
 
 
 class CommonConstant:

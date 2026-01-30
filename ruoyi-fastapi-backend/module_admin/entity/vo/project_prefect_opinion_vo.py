@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Union, List
-
 from datetime import datetime
+from typing import Optional, Union
 
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -27,7 +26,6 @@ class ProjectPrefectOpinionModel(BaseModel):
 # 请求模型（新增意见）
 class AddPrefectOpinionModel(ProjectPrefectOpinionModel):
     """新增审核意见请求模型"""
-    pass
 
     # 校验：核心字段非空
     # @NotBlank(field_name='node_code', message='节点编码不能为空')
@@ -39,5 +37,6 @@ class AddPrefectOpinionModel(ProjectPrefectOpinionModel):
 # 响应模型（意见列表）
 class OpinionListModel(BaseModel):
     """审核意见列表响应模型"""
+
     total: Optional[int] = Field(default=0, description='总条数')
-    rows: List[Union[ProjectPrefectOpinionModel, None]] = Field(default=[], description='意见列表')
+    rows: list[Union[ProjectPrefectOpinionModel, None]] = Field(default=[], description='意见列表')

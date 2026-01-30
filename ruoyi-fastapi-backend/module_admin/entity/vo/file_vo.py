@@ -1,6 +1,6 @@
-from typing import Optional, List
+from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -27,8 +27,8 @@ class FileUploadResponseModel(BaseModel):
 class BatchFileUploadResponseModel(BaseModel):
     success_count: int = Field(default=0, description='上传成功数量')
     fail_count: int = Field(default=0, description='上传失败数量')
-    file_list: List[FileUploadResponseModel] = Field(default=[], description='上传成功的文件列表')
-    fail_details: List[str] = Field(default=[], description='失败详情')
+    file_list: list[FileUploadResponseModel] = Field(default=[], description='上传成功的文件列表')
+    fail_details: list[str] = Field(default=[], description='失败详情')
 
 
 # 文件查询模型

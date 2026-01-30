@@ -1,17 +1,15 @@
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from common.constant import CommonConstant
 from common.vo import CrudResponseModel
 from exceptions.exception import ServiceException
 from module_admin.dao.enterprise_info_dao import EnterpriseDao
 from module_admin.entity.do.enterprise_info_do import Enterprise
-from module_admin.entity.vo.enterprise_info_vo import EnterpriseQueryModel, EnterpriseModel, DeleteEnterpriseModel, \
-    EnterprisePageModel
-from module_admin.entity.vo.user_vo import CurrentUserModel
+from module_admin.entity.vo.enterprise_info_vo import DeleteEnterpriseModel, EnterpriseModel, EnterprisePageModel
 from utils.common_util import CamelCaseUtil
-
 
 
 class EnterpriseService:
@@ -19,11 +17,10 @@ class EnterpriseService:
     单位管理模块服务层
     """
 
-
-
     @classmethod
     async def get_ent_list_services(
-        cls, query_db: AsyncSession, page_object: EnterprisePageModel, is_page: bool = False) -> list[dict[str, Any]]:
+        cls, query_db: AsyncSession, page_object: EnterprisePageModel, is_page: bool = False
+    ) -> list[dict[str, Any]]:
         """
         获取单位列表信息service
 
@@ -32,9 +29,7 @@ class EnterpriseService:
         :param is_page: 是否分页查询
         :return: 单位列表信息对象
         """
-        menu_list_result = await EnterpriseDao.get_ent_list(
-            query_db, page_object, is_page
-        )
+        menu_list_result = await EnterpriseDao.get_ent_list(query_db, page_object, is_page)
 
         return CamelCaseUtil.transform_result(menu_list_result)
 
@@ -87,15 +82,13 @@ class EnterpriseService:
                 duplicate_ent = await query_db.execute(
                     # 条件：taxpayer_id匹配 + ent_id不匹配（排除自身）
                     select(Enterprise).where(
-                        Enterprise.taxpayer_id == page_object.taxpayer_id,
-                        Enterprise.ent_id != page_object.ent_id
+                        Enterprise.taxpayer_id == page_object.taxpayer_id, Enterprise.ent_id != page_object.ent_id
                     )
                 )
                 duplicate_ent_obj = duplicate_ent.scalars().first()
                 if duplicate_ent_obj:
                     return CrudResponseModel(
-                        is_success=False,
-                        message=f"纳税人识别号 {page_object.taxpayer_id} 已被其他企业占用，无法更新"
+                        is_success=False, message=f'纳税人识别号 {page_object.taxpayer_id} 已被其他企业占用，无法更新'
                     )
 
                 try:
@@ -145,5 +138,3 @@ class EnterpriseService:
         result = EnterpriseModel(**CamelCaseUtil.transform_result(menu)) if menu else EnterpriseModel()
 
         return result
-
-

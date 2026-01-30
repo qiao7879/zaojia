@@ -125,7 +125,7 @@
 </template>
 
 <script setup name="ProjectAudit">
-import { listProject, secondReviewProject, thirdReviewProject } from "@/api/project/projects";
+import { listProject, secondReviewProject, secondReviewProjectBatch, thirdReviewProject, thirdReviewProjectBatch } from "@/api/project/projects";
 import { useRouter } from "vue-router";
 import { parseTime } from "@/utils/ruoyi";
 
@@ -277,14 +277,34 @@ async function handleBatchApprove() {
       return;
     }
     await proxy.$modal.confirm(`确认批量通过 ${rows.length} 条数据吗？`);
-    await Promise.all(
-      rows.map(r => {
-        if (r.reviewStatus === "03") {
-          return secondReviewProject({ proId: r.proId, currentStatus: "03", targetStatus: "04", opinionContent: value });
-        }
-        return thirdReviewProject({ proId: r.proId, currentStatus: "04", targetStatus: "05", opinionContent: value });
-      })
-    );
+    const secondRows = rows.filter(r => r.reviewStatus === "03");
+    const thirdRows = rows.filter(r => r.reviewStatus === "04");
+    const tasks = [];
+    if (secondRows.length) {
+      tasks.push(
+        secondReviewProjectBatch({
+          proIds: secondRows.map(r => r.proId),
+          currentStatus: "03",
+          targetStatus: "04",
+          opinionContent: value
+        })
+      );
+    }
+    if (thirdRows.length) {
+      tasks.push(
+        thirdReviewProjectBatch({
+          proIds: thirdRows.map(r => r.proId),
+          currentStatus: "04",
+          targetStatus: "05",
+          opinionContent: value
+        })
+      );
+    }
+    if (!tasks.length) {
+      proxy.$modal.msgError("所选数据均不可通过");
+      return;
+    }
+    await Promise.all(tasks);
     proxy.$modal.msgSuccess("操作成功");
     selectedRows.value = [];
     getList();
@@ -304,14 +324,34 @@ async function handleBatchReject() {
       return;
     }
     await proxy.$modal.confirm(`确认批量拒绝 ${rows.length} 条数据吗？`);
-    await Promise.all(
-      rows.map(r => {
-        if (r.reviewStatus === "03") {
-          return secondReviewProject({ proId: r.proId, currentStatus: "03", targetStatus: "02", opinionContent: value });
-        }
-        return thirdReviewProject({ proId: r.proId, currentStatus: "04", targetStatus: "02", opinionContent: value });
-      })
-    );
+    const secondRows = rows.filter(r => r.reviewStatus === "03");
+    const thirdRows = rows.filter(r => r.reviewStatus === "04");
+    const tasks = [];
+    if (secondRows.length) {
+      tasks.push(
+        secondReviewProjectBatch({
+          proIds: secondRows.map(r => r.proId),
+          currentStatus: "03",
+          targetStatus: "02",
+          opinionContent: value
+        })
+      );
+    }
+    if (thirdRows.length) {
+      tasks.push(
+        thirdReviewProjectBatch({
+          proIds: thirdRows.map(r => r.proId),
+          currentStatus: "04",
+          targetStatus: "02",
+          opinionContent: value
+        })
+      );
+    }
+    if (!tasks.length) {
+      proxy.$modal.msgError("所选数据均不可拒绝");
+      return;
+    }
+    await Promise.all(tasks);
     proxy.$modal.msgSuccess("操作成功");
     selectedRows.value = [];
     getList();
