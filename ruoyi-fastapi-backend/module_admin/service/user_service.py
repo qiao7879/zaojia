@@ -45,6 +45,24 @@ class UserService:
     """
     用户管理模块服务层
     """
+    @classmethod
+    async def get_system_user_engineer_list_services(cls, query_db: AsyncSession,
+                                                     query_object: UserPageQueryModel,
+                                                     role_id: int,
+                                                     is_page: bool = False,) -> Union[PageModel[UserRowModel], list[dict[str, Any]]]:
+        """
+        获取系统用户列表信息service
+
+        :param query_db: orm对象
+        :param query_object: 查询参数对象
+        :param role_id: 查询参数对象
+        :param is_page: 是否开启分页
+        :return: 系统用户列表信息
+        """
+        user_engineer_list_result = await UserDao.get_system_user_engineer_list(
+            query_db, query_object, role_id, is_page)
+
+        return CamelCaseUtil.transform_result(user_engineer_list_result)
 
     @classmethod
     async def get_user_list_services(

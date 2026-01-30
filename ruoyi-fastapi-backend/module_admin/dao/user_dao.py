@@ -26,6 +26,40 @@ class UserDao:
     """
     用户管理模块数据库操作层
     """
+    @classmethod
+    async def get_system_user_engineer_list(cls, db: AsyncSession,
+                                            query_object: UserPageQueryModel,
+                                            role_id: int,
+                                            is_page: bool = False
+                                            )-> Union[PageModel, list[list[dict[str, Any]]]]:
+        """
+        获取系统用户下的工程师列表
+        :param db: orm对象
+        :param is_page: 是否开启分页
+        :param query_object: 查询参数对象
+        :param role_id: 角色id
+        :return: 当前角色下的用户列表
+        """
+        query_user_info = (
+                    select(SysUser)
+                    .where(
+                        SysUser.status == '0',
+                        SysUser.del_flag == '0',
+                    )
+                    .join(
+                        SysUserRole,
+                        and_(
+                            SysUserRole.user_id == SysUser.user_id,
+                            SysUserRole.role_id == role_id,
+                        )
+                        ).distinct()
+
+            )
+        user_list: Union[PageModel, list[list[dict[str, Any]]]] = await PageUtil.paginate(
+            db, query_user_info, query_object.page_num, query_object.page_size, is_page)
+
+        return user_list
+
 
     @classmethod
     async def get_user_by_name(cls, db: AsyncSession, user_name: str) -> Union[SysUser, None]:

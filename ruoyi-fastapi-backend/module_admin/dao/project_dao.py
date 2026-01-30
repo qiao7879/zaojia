@@ -15,31 +15,54 @@ from module_admin.entity.vo.project_vo import (
     ProjectPageModel,
 )
 from utils.common_util import CamelCaseUtil
+from utils.page_util import PageUtil
 
 
 class ProjectDao:
     """项目主表数据访问层"""
 
     @classmethod
-    async def get_project_list_dao(
-        cls, db: AsyncSession, page_object: ProjectPageModel, role: list ,user_id: int, is_page: bool = True
-    ) -> Union[PageModel, list[dict[str, Any]]]:
+    async def get_project_list1(cls, db: AsyncSession, page_object: ProjectPageModel, is_page: bool = False
+                               ) -> Union[PageModel, list[dict[str, Any]]]:
         """
-        根据查询参数获取项目列表信息
-        :param db: orm对象
-        :param page_object: 查询参数对象
-        :param user_id: 查询参数对象
-        :param role: 查询参数对象
-        :param is_page: 是否分页查询
-        :return: 项目列表信息对象
+            根据查询参数获取岗位列表信息
+
+            :param db: orm对象
+            :param page_object: 查询参数对象
+            :param is_page: 是否开启分页
+            :return: 岗位列表信息对象
         """
-        if is_page:
-            if role in ['admin', 'a_admin']:
-                pass
-            elif role in []:
-                pass
 
+        query = (
+            select(Project)
+            .where(
+                Project.project_name.like(
+                    f'%{page_object.project_name}%') if page_object.project_name else True,
+                Project.project_code.like(
+                    f'%{page_object.project_code}%') if page_object.project_code else True,
+                # Project.prefect_status == page_object.prefect_status if page_object.prefect_status else True,
+                Project.payment_received == page_object.payment_received if page_object.payment_received else True
+            )
+            .order_by(Project.create_time.desc())
+            .distinct()
+        )
+        post_list: Union[PageModel, list[dict[str, Any]]] = await PageUtil.paginate(
+            db, query, page_object.page_num, page_object.page_size, is_page
+        )
+        if is_page and isinstance(post_list, PageModel):
+            # 将 ORM 实例转为 ProjectModel（自动处理 Decimal）
+            pydantic_rows = [ProjectModel.model_validate(orm_obj) for orm_obj in post_list.rows]
+            # 转字典（Decimal 已被序列化）
+            post_list.rows = [row.model_dump() for row in pydantic_rows]
+            # 转换字段名为驼峰格式
+            post_list.rows = [CamelCaseUtil.transform_result(row_dict) for row_dict in post_list.rows]
+        else:
+            pydantic_list = [ProjectModel.model_validate(orm_obj) for orm_obj in post_list]
+            post_list = [row.model_dump() for row in pydantic_list]
+            # 转换字段名为驼峰格式
+            post_list = [CamelCaseUtil.transform_result(row_dict) for row_dict in post_list]
 
+        return post_list
 
     @classmethod
     async def get_project_list(

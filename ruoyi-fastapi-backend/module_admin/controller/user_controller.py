@@ -37,7 +37,7 @@ from module_admin.entity.vo.user_vo import (
     UserProfileModel,
     UserRoleQueryModel,
     UserRoleResponseModel,
-    UserRowModel,
+    UserRowModel, UserQueryModel,
 )
 from module_admin.service.dept_service import DeptService
 from module_admin.service.role_service import RoleService
@@ -70,6 +70,25 @@ async def get_system_dept_tree(
 
     return ResponseUtil.success(data=dept_query_result)
 
+@user_controller.get(
+    '/{role_id}',
+    summary='获取工程师用户列表接口',
+    description='用于工程师用户分页列表',
+    response_model=PageResponseModel[UserRowModel],
+    dependencies=[UserInterfaceAuthDependency('system:user:list')],
+)
+async def get_system_user_engineer_list(
+    request: Request,
+    role_id: Annotated[int, Path(description='需要查询的角色ID')],
+    user_page_query: Annotated[UserPageQueryModel, Query()],
+    query_db: Annotated[AsyncSession, DBSessionDependency()],
+) -> Response:
+    # 获取分页数据
+    user_page_query_result = await UserService.get_system_user_engineer_list_services(
+        query_db,user_page_query, role_id, is_page=True)
+    logger.info('获取成功')
+
+    return ResponseUtil.success(data=user_page_query_result)
 
 @user_controller.get(
     '/list',

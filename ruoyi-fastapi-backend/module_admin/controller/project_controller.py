@@ -133,7 +133,7 @@ async def get_system_menu_list(
     query_db: Annotated[AsyncSession, DBSessionDependency()],
     current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
 ) -> Response:
-    menu_query_result = await ProjectService.get_project_list_services(query_db, project_query, is_page=True)
+    menu_query_result = await ProjectService.get_project_list_services1(query_db, project_query,current_user, is_page=True)
     logger.info('获取成功')
 
     return ResponseUtil.success(data=menu_query_result)

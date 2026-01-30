@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, validator, field_validator
 from pydantic.alias_generators import to_camel
 from pydantic_validation_decorator import NotBlank, Size
 
@@ -82,8 +82,21 @@ class ProjectModel(BaseModel):
     update_time: Optional[datetime] = Field(default_factory=datetime.now, description='更新时间')
     del_flag: Optional[str] = Field(default='0', max_length=1, description='删除标志（0-存在/2-删除）')
 
+    @field_validator("coordinator",  mode='before')
+    def convert_list_to_str(cls, v):
+        # 如果传入的是列表，转为逗号分隔的字符串
+        if isinstance(v, list):
+            return ",".join(v)
+        # 如果传入的是合法字符串，直接返回
+        elif isinstance(v, str):
+            return v
+        # 其他情况返回空字符串（可根据需求调整）
+        else:
+            return ""
+
     def validate_fields(self) -> None:
         pass
+
 
 
 class EditProjectModel(ProjectModel):
@@ -128,6 +141,12 @@ class DeleteProjectModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel)
 
     pro_ids: str = Field(description='项目ID列表')
+
+class ProjectUserModel(BaseModel):
+    """项目人员信息模型"""
+
+    pro_id: Optional[int] = Field(default=None, description='项目ID')
+    user_id: Optional[int] = Field(default=None, description='用户ID')
 
 
 # class ExcelProjectModel(BaseModel):

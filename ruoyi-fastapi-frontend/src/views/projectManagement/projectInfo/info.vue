@@ -224,20 +224,20 @@
           type="primary"
           plain
           icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['system:project1:add']"
+          @click="handleViewAdd"
+          v-hasPermi="['system:project:add']"
         >新增</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:project1:edit']"
-        >修改</el-button>
-      </el-col>
+<!--      <el-col :span="1.5">-->
+<!--        <el-button-->
+<!--          type="success"-->
+<!--          plain-->
+<!--          icon="Edit"-->
+<!--          :disabled="single"-->
+<!--          @click="handleUpdate"-->
+<!--          v-hasPermi="['system:project1:edit']"-->
+<!--        >修改</el-button>-->
+<!--      </el-col>-->
       <el-col :span="1.5">
         <el-button
           type="danger"
@@ -245,7 +245,7 @@
           icon="Delete"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['system:project1:remove']"
+          v-hasPermi="['system:project:remove']"
         >删除</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -254,7 +254,7 @@
           plain
           icon="Download"
           @click="handleExport"
-          v-hasPermi="['system:project1:export']"
+          v-hasPermi="['system:project:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -346,7 +346,7 @@
       <el-table-column label="项目流程状态" align="center" prop="prefectStatus" />
       <el-table-column label="创建人名称" align="center" prop="createName" />
       <el-table-column label="更新人名称" align="center" prop="updateName" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
         <template #default="scope">
           <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:project:edit']">修改</el-button>
@@ -815,10 +815,11 @@ function handleSelectionChange(selection) {
 /** 新增按钮操作 */
 function handleAdd() {
   reset();
-  getProjectTypeOptions()
+  // getProjectTypeOptions()
   open.value = true;
   title.value = "添加项目主";
 }
+
 // 查看详情
 function handleView(row) {
   router.push({
@@ -826,6 +827,17 @@ function handleView(row) {
     query: {
       id: row.proId,
       type: 'view'
+    }
+  })
+}
+
+// 新增
+function handleViewAdd(row) {
+  router.push({
+    path: '/projectManagement/detail',
+    query: {
+      type: 'add',
+      title: "添加项目主",
     }
   })
 }
@@ -842,7 +854,7 @@ function handleUpdate(row) {
   //   title.value = "修改项目主";
   // });
   router.push({
-    path: '/projectManagement/projectInfo/detail',
+    path: '/projectManagement/detail',
     query: {
       type: 'edit', // 标识是编辑操作
       id: row.proId // 传递项目ID，用于详情页获取数据

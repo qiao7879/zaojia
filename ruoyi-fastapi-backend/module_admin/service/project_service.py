@@ -62,7 +62,7 @@ class ProjectService:
         roles_list = current_user.roles
         user_id = current_user.user.user_id
 
-        menu_list_result = await ProjectDao.get_project_list_dao(query_db, page_object,roles_list,user_id, is_page)
+        menu_list_result = await ProjectDao.get_project_list1(query_db, page_object,is_page)
 
         return CamelCaseUtil.transform_result(menu_list_result)
 

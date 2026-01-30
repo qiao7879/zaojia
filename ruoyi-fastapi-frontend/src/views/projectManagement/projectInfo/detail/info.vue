@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-card class="mb8">
+    <el-card class="mb8" v-if="winType==='edit' || winType==='view'">
       <template #header>
         <div class="page-header">
           <div class="page-title">
@@ -17,7 +17,10 @@
           </div>
           <div class="page-actions">
             <el-button icon="ArrowLeft" @click="goBack">返回</el-button>
-            <el-button type="primary" icon="Edit" @click="toggleEdit">
+            <el-button v-if="addMode" type="primary" @click="toggleEdit">
+              提交
+            </el-button>
+            <el-button v-else type="primary" icon="Edit" @click="toggleEdit">
               {{ editMode ? "取消编辑" : "编辑" }}
             </el-button>
             <el-button v-if="editMode" type="success" icon="Check" :loading="saving" @click="saveProject">
@@ -32,7 +35,7 @@
     </el-card>
 
     <el-row :gutter="12">
-      <el-col :xs="24" :lg="16">
+      <el-col :xs="24" :lg=winLg>
         <el-card>
           <template #header>
             <span class="card-title">基本信息</span>
@@ -42,7 +45,7 @@
             <el-descriptions-item label="项目编码" :label-width="110">
               {{ projectInfo.projectCode || "-" }}
             </el-descriptions-item>
-            <el-descriptions-item label="项目全称" :label-width="110">
+            <el-descriptions-item label="项目名称" :label-width="110">
               {{ projectInfo.projectName || "-" }}
             </el-descriptions-item>
             <el-descriptions-item label="业主单位" :label-width="110">
@@ -51,9 +54,7 @@
             <el-descriptions-item label="使用单位" :label-width="110">
               {{ projectInfo.userCompany || "-" }}
             </el-descriptions-item>
-            <el-descriptions-item label="服务内容" :label-width="110">
-              {{ projectInfo.serviceContent || "-" }}
-            </el-descriptions-item>
+
             <el-descriptions-item label="负责人" :label-width="110">
               {{ projectInfo.projectManager || "-" }}
             </el-descriptions-item>
@@ -69,6 +70,15 @@
             <el-descriptions-item label="项目状态" :label-width="110">
               {{ projectInfo.status || "-" }}
             </el-descriptions-item>
+            <el-descriptions-item label="项目金额" :label-width="110">
+              {{ projectInfo.status || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label="合同附件" :label-width="110">
+              {{ projectInfo.status || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label="成果附件" :label-width="110">
+              {{ projectInfo.status || "-" }}
+            </el-descriptions-item>
             <el-descriptions-item label="备注" :label-width="110" :span="2">
               {{ projectInfo.remarks || "-" }}
             </el-descriptions-item>
@@ -76,52 +86,88 @@
 
           <el-form v-else :model="projectInfo" label-width="110px">
             <el-row :gutter="12">
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="项目编码">
-                  <el-input v-model="projectInfo.projectCode" disabled />
+                  <template v-if="winType==='view' || winType==='edit'">
+                    <el-input v-model="projectInfo.projectCode" disabled />
+                  </template>
+                  <template v-else>
+                    <el-input v-model="projectInfo.projectCode" />
+                  </template>
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="项目全称">
+              <el-col :xs="24" :sm="8">
+                <el-form-item label="项目名称">
                   <el-input v-model="projectInfo.projectName" />
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="项目类型">
                   <el-input v-model="projectInfo.projectType" />
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="业主单位">
-                  <el-input v-model="projectInfo.entName" />
+                  <el-select v-model="projectInfo.entName" placeholder="请选择业主单位">
+                    <el-option
+                      v-for="item in entYzList"
+                      :key="item.entId"
+                      :label="item.enterpriseName"
+                      :value="item.enterpriseName"
+                    />
+                </el-select>
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="使用单位">
-                  <el-input v-model="projectInfo.userCompany" />
+                  <el-select v-model="projectInfo.userCompany" placeholder="请选择使用单位">
+                    <el-option
+                      v-for="item in entSyList"
+                      :key="item.entId"
+                      :label="item.enterpriseName"
+                      :value="item.enterpriseName"
+                    />
+                </el-select>
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
-                <el-form-item label="服务内容">
-                  <el-input v-model="projectInfo.serviceContent" />
-                </el-form-item>
-              </el-col>
-              <el-col :xs="24" :sm="12">
+
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="负责人">
-                  <el-input v-model="projectInfo.projectManager" />
+                  <el-select v-model="projectInfo.projectManager" placeholder="请选择负责人">
+                    <el-option
+                      v-for="item in engineerList"
+                      :key="item.userId"
+                      :label="item.nickName"
+                      :value="item.nickName"
+                    />
+                </el-select>
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="项目成员">
-                  <el-input v-model="projectInfo.coordinator" />
+                  <el-select
+                    v-model="projectInfo.coordinator"
+                    placeholder="请选择项目成员"
+                    multiple
+                    collapse-tags
+                    collapse-tags-tooltip
+                    clearable
+                  >
+                    <el-option
+                      v-for="item in projectMembersList"
+                      :key="item.userId"
+                      :label="item.nickName"
+                      :value="item.nickName"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="开始时间">
                   <el-date-picker v-model="projectInfo.startDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
                 </el-form-item>
               </el-col>
-              <el-col :xs="24" :sm="12">
+              <el-col :xs="24" :sm="8">
                 <el-form-item label="预计结束时间">
                   <el-date-picker v-model="projectInfo.endDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
                 </el-form-item>
@@ -143,13 +189,13 @@
           <el-tabs v-model="activeTab" type="card">
             <el-tab-pane label="合同" name="contract">
               <el-descriptions v-if="!editMode" :column="2" border>
-                <el-descriptions-item label="合同签订状态" :label-width="110">
-                  {{ projectInfo.contractSigned || "-" }}
+                <el-descriptions-item label="合同是否已签订" :label-width="110">
+                  {{ reconciliationDoneLabel }}
                 </el-descriptions-item>
-                <el-descriptions-item label="是否已取得文件" :label-width="110">
-                  {{ projectInfo.documentObtained || "-" }}
+                <el-descriptions-item label="是否已取得" :label-width="110">
+                  {{ reconciliationDoneLabel }}
                 </el-descriptions-item>
-                <el-descriptions-item label="合同折扣说明" :label-width="110">
+                <el-descriptions-item label="合同折扣情况" :label-width="110">
                   {{ projectInfo.contractDiscount || "-" }}
                 </el-descriptions-item>
                 <el-descriptions-item label="合同金额" :label-width="110">
@@ -159,28 +205,56 @@
               <el-form v-else :model="projectInfo" label-width="110px">
                 <el-row :gutter="12">
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="合同签订状态">
-                      <el-input v-model="projectInfo.contractSigned" />
+                    <el-form-item label="合同是否已签订">
+                      <el-select v-model="projectInfo.contractSigned" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="是否已取得文件">
-                      <el-input v-model="projectInfo.documentObtained" />
+                    <el-form-item label="是否已取">
+                      <el-select v-model="projectInfo.documentObtained" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :xs="24">
-                    <el-form-item label="合同折扣说明">
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="合同折扣情况">
                       <el-input v-model="projectInfo.contractDiscount" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="合同金额">
+                      <el-input v-model="projectInfo.contractAmount" />
                     </el-form-item>
                   </el-col>
                 </el-row>
               </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="开票与回款" name="invoice">
+            <el-tab-pane label="开票，二级三级" name="invoice">
               <el-descriptions v-if="!editMode" :column="2" border>
-                <el-descriptions-item label="应开票金额" :label-width="110">
+                <el-descriptions-item label="项目应开票金额" :label-width="110">
                   {{ projectInfo.invoiceShouldAmount ?? "-" }}
+                </el-descriptions-item>
+                <el-descriptions-item label="是否已请款" :label-width="110">
+                  {{ reconciliationDoneLabel }}
+                </el-descriptions-item>
+                <el-descriptions-item label="是否已开票" :label-width="110">
+                  {{ reconciliationDoneLabel }}
+                </el-descriptions-item>
+                <el-descriptions-item label="开票日期" :label-width="110">
+                  {{ parseTime(projectInfo.invoiceDate, "{y}-{m}-{d}") || "-" }}
                 </el-descriptions-item>
                 <el-descriptions-item label="已开票金额" :label-width="110">
                   {{ projectInfo.invoiceIssuedAmount ?? "-" }}
@@ -188,40 +262,43 @@
                 <el-descriptions-item label="剩余可开票金额" :label-width="110">
                   {{ projectInfo.invoiceRemainingAmount ?? "-" }}
                 </el-descriptions-item>
-                <el-descriptions-item label="是否已开具发票" :label-width="110">
-                  {{ projectInfo.invoiceIssued || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="发票开具日期" :label-width="110">
-                  {{ parseTime(projectInfo.invoiceDate, "{y}-{m}-{d}") || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="是否已申请付款" :label-width="110">
-                  {{ projectInfo.paymentApplied || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="请款月份" :label-width="110">
-                  {{ parseTime(projectInfo.paymentMonth, "{y}-{m}-{d}") || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="业主是否已回款" :label-width="110">
-                  {{ projectInfo.paymentReceived || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="已回款金额" :label-width="110">
-                  {{ projectInfo.paymentReceivedAmount ?? "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="回款到账日期" :label-width="110">
-                  {{ parseTime(projectInfo.paymentReceivedDate, "{y}-{m}-{d}") || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="剩余未回款金额" :label-width="110">
-                  {{ projectInfo.paymentRemainingAmount ?? "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="项目回款率" :label-width="110">
-                  {{ projectInfo.paymentRecoveryRate ?? "-" }}
-                </el-descriptions-item>
+
               </el-descriptions>
 
               <el-form v-else :model="projectInfo" label-width="110px">
                 <el-row :gutter="12">
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="应开票金额">
+                    <el-form-item label="项目应开票金额">
                       <el-input v-model="projectInfo.invoiceShouldAmount" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="是否已请款">
+                      <el-select v-model="projectInfo.paymentApplied" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="是否已开票">
+                      <el-select v-model="projectInfo.invoiceIssued" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="开具日期">
+                      <el-date-picker v-model="projectInfo.invoiceDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
@@ -230,28 +307,44 @@
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="是否已开具发票">
-                      <el-input v-model="projectInfo.invoiceIssued" />
+                    <el-form-item label="剩余可开票金额">
+                      <el-input v-model="projectInfo.invoiceIssuedAmount" />
                     </el-form-item>
                   </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="发票开具日期">
-                      <el-date-picker v-model="projectInfo.invoiceDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="是否已申请付款">
-                      <el-input v-model="projectInfo.paymentApplied" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="请款月份">
-                      <el-date-picker v-model="projectInfo.paymentMonth" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
+                </el-row>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="回款，已归档" name="huik">
+              <el-descriptions v-if="!editMode" :column="2" border>
+                <el-descriptions-item label="业主是否已回款" :label-width="110">
+                  {{ reconciliationDoneLabel }}
+                </el-descriptions-item>
+                <el-descriptions-item label="已回款金额" :label-width="110">
+                  {{ projectInfo.paymentReceivedAmount ?? "-" }}
+                </el-descriptions-item>
+                <el-descriptions-item label="已回款日期" :label-width="110">
+                  {{ parseTime(projectInfo.paymentReceivedDate, "{y}-{m}-{d}") || "-" }}
+                </el-descriptions-item>
+                <el-descriptions-item label="剩余金额" :label-width="110">
+                  {{ projectInfo.paymentRemainingAmount ?? "-" }}
+                </el-descriptions-item>
+                <el-descriptions-item label="回款率" :label-width="110">
+                  {{ projectInfo.paymentRecoveryRate ?? "-" }}
+                </el-descriptions-item>
+              </el-descriptions>
+
+              <el-form v-else :model="projectInfo" label-width="110px">
+                <el-row :gutter="12">
                   <el-col :xs="24" :sm="12">
                     <el-form-item label="业主是否已回款">
-                      <el-input v-model="projectInfo.paymentReceived" />
+                      <el-select v-model="projectInfo.paymentReceived" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
@@ -260,32 +353,81 @@
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="回款到账日期">
+                    <el-form-item label="已回款日期">
                       <el-date-picker v-model="projectInfo.paymentReceivedDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
-                    <el-form-item label="项目回款率">
+                    <el-form-item label="剩余金额">
+                      <el-input v-model="projectInfo.paymentRemainingAmount" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="回款率">
                       <el-input v-model="projectInfo.paymentRecoveryRate" />
                     </el-form-item>
                   </el-col>
                 </el-row>
               </el-form>
             </el-tab-pane>
-
-            <el-tab-pane label="对账与提成" name="recon">
+            <el-tab-pane label="存档（归档人、二级复核、三级复核，管理员）" name="archive">
               <el-descriptions v-if="!editMode" :column="2" border>
-                <el-descriptions-item label="是否已对账" :label-width="110">
-                  {{ projectInfo.reconciliationDone || "-" }}
+                <el-descriptions-item label="合同电子档是否已存" :label-width="110">
+                  {{ reconciliationDoneLabel }}
                 </el-descriptions-item>
-                <el-descriptions-item label="双方对账日期" :label-width="110">
-                  {{ parseTime(projectInfo.reconciliationDate, "{y}-{m}-{d}") || "-" }}
+                <el-descriptions-item label="成果文件电子档是否已存档" :label-width="110">
+                  {{ reconciliationDoneLabel }}
                 </el-descriptions-item>
-                <el-descriptions-item label="对账凭证" :label-width="110">
-                  {{ projectInfo.reconciliationVoucher || "-" }}
+                <el-descriptions-item label="纸质资料存档情况" :label-width="110">
+                  {{ projectInfo.documentPaperSaved || "-" }}
                 </el-descriptions-item>
+                <el-descriptions-item label="资料存档类型" :label-width="110">
+                  {{ projectInfo.documentSaveType || "-" }}
+                </el-descriptions-item>
+              </el-descriptions>
+              <el-form v-else :model="projectInfo" label-width="110px">
+                <el-row :gutter="12">
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="合同电子档是否已存">
+                      <el-select v-model="projectInfo.contractElectronicSaved" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="成果文件电子档是否已存档" >
+                      <el-select v-model="projectInfo.deliverableElectronicSaved" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="纸质资料存档情况">
+                      <el-input v-model="projectInfo.documentPaperSaved" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="资料存档类型">
+                      <el-input v-model="projectInfo.documentSaveType" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="提成" name="ticheng">
+              <el-descriptions v-if="!editMode" :column="2" border>
                 <el-descriptions-item label="是否已计提提成" :label-width="110">
-                  {{ projectInfo.commissionAccrued || "-" }}
+                  {{ reconciliationDoneLabel }}
                 </el-descriptions-item>
                 <el-descriptions-item label="提成金额" :label-width="110">
                   {{ projectInfo.commissionAmount ?? "-" }}
@@ -297,8 +439,54 @@
               <el-form v-else :model="projectInfo" label-width="110px">
                 <el-row :gutter="12">
                   <el-col :xs="24" :sm="12">
+                    <el-form-item label="是否已计提成">
+                      <el-select v-model="projectInfo.commissionAccrued" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="提成金额">
+                      <el-input v-model="projectInfo.commissionAmount" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="12">
+                    <el-form-item label="提成日期">
+                      <el-date-picker v-model="projectInfo.commissionDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="对账（财务，管理员）" name="recon">
+              <el-descriptions v-if="!editMode" :column="2" border>
+                <el-descriptions-item label="是否已对账" :label-width="110">
+                  {{ reconciliationDoneLabel }}
+                </el-descriptions-item>
+                <el-descriptions-item label="双方对账日期" :label-width="110">
+                  {{ parseTime(projectInfo.reconciliationDate, "{y}-{m}-{d}") || "-" }}
+                </el-descriptions-item>
+                <el-descriptions-item label="对账凭证" :label-width="110">
+                  {{ projectInfo.reconciliationVoucher || "-" }}
+                </el-descriptions-item>
+              </el-descriptions>
+              <el-form v-else :model="projectInfo" label-width="110px">
+                <el-row :gutter="12">
+                  <el-col :xs="24" :sm="12">
                     <el-form-item label="是否已对账">
-                      <el-input v-model="projectInfo.reconciliationDone" />
+                       <el-select v-model="projectInfo.reconciliationDone" placeholder="请选择">
+                          <el-option
+                            v-for="item in options"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                          </el-option>
+                      </el-select>
                     </el-form-item>
                   </el-col>
                   <el-col :xs="24" :sm="12">
@@ -311,86 +499,17 @@
                       <el-input v-model="projectInfo.reconciliationVoucher" />
                     </el-form-item>
                   </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="是否已计提提成">
-                      <el-input v-model="projectInfo.commissionAccrued" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="提成金额">
-                      <el-input v-model="projectInfo.commissionAmount" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="提成计提日期">
-                      <el-date-picker v-model="projectInfo.commissionDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
                 </el-row>
               </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="存档" name="archive">
-              <el-descriptions v-if="!editMode" :column="2" border>
-                <el-descriptions-item label="合同电子档已存档" :label-width="110">
-                  {{ projectInfo.contractElectronicSaved || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="合同文件编号" :label-width="110">
-                  {{ projectInfo.contractFile || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="成果电子档已存档" :label-width="110">
-                  {{ projectInfo.deliverableElectronicSaved || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="成果文件编号" :label-width="110">
-                  {{ projectInfo.deliverableFile || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="纸质资料存档情况" :label-width="110">
-                  {{ projectInfo.documentPaperSaved || "-" }}
-                </el-descriptions-item>
-                <el-descriptions-item label="资料存档类型说明" :label-width="110">
-                  {{ projectInfo.documentSaveType || "-" }}
-                </el-descriptions-item>
-              </el-descriptions>
-              <el-form v-else :model="projectInfo" label-width="110px">
-                <el-row :gutter="12">
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="合同电子档已存档">
-                      <el-input v-model="projectInfo.contractElectronicSaved" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="合同文件编号">
-                      <el-input v-model="projectInfo.contractFile" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="成果电子档已存档">
-                      <el-input v-model="projectInfo.deliverableElectronicSaved" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="成果文件编号">
-                      <el-input v-model="projectInfo.deliverableFile" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="纸质资料存档情况">
-                      <el-input v-model="projectInfo.documentPaperSaved" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :xs="24" :sm="12">
-                    <el-form-item label="资料存档类型说明">
-                      <el-input v-model="projectInfo.documentSaveType" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </el-form>
-            </el-tab-pane>
+
+
           </el-tabs>
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="8">
+      <el-col :xs="24" :lg="8" v-if="winType === 'view'">
         <el-card>
           <template #header>
             <span class="card-title">流程与意见</span>
@@ -445,7 +564,14 @@
           <el-empty v-else description="暂无审核意见" />
         </el-card>
       </el-col>
+
     </el-row>
+    <div class="button-container" v-if="winType === 'add'">
+        <el-button @click="goBack">返回</el-button>
+            <el-button type="primary" :loading="saving" @click="addSubmitProject">
+              提交
+            </el-button>
+      </div>
   </div>
 </template>
 
@@ -453,7 +579,9 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { parseTime } from "@/utils/ruoyi";
-import { getProject, secondReviewProject, thirdReviewProject, updateProject } from "@/api/project/projects";
+import { getProject, secondReviewProject, thirdReviewProject, updateProject, addProject } from "@/api/project/projects";
+import { listEnt } from "@/api/project/enterprise";
+import {listRoleUser} from "@/api/system/user";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -466,10 +594,20 @@ const opinionList = ref([]);
 const activeTab = ref("contract");
 const editMode = ref(false);
 const saving = ref(false);
+const addMode = ref(false);
+const winType = ref("")
 
 const auditOpinion = ref("");
 const auditLoading = ref(false);
 
+const entYzList = ref([]);
+const entSyList = ref([]);
+const projectMembersList = ref([]);
+const engineerList = ref([]);
+const options = [
+        { label: '是', value: 'yes' },
+        { label: '否', value: 'no' }
+      ]
 const stepItems = [
   { value: "01", title: "项目登记" },
   { value: "02", title: "工程师修改" },
@@ -478,6 +616,37 @@ const stepItems = [
   { value: "05", title: "待归档" },
   { value: "06", title: "已归档" }
 ];
+const reconciliationDoneLabel = computed(() => {
+  const value = projectInfo.value.reconciliationDone;
+  if (value === 0) return '是';
+  if (value === 1) return '否';
+  return '-';
+});
+
+
+async function getProjectTypeOptions1() {
+  // 调用 API 获取字典数据
+  await listEnt({entType:1}).then(response => {
+    entYzList.value = response.data.rows;
+  });
+}
+async function getProjectTypeOptions2() {
+  // 调用 API 获取字典数据
+  await listEnt({entType:2}).then(response => {
+    entSyList.value = response.data.rows;
+  });
+}
+async function getProjectTypeOptions(query) {
+  // 调用 API 获取字典数据
+  const response = await listEnt(query);
+    return response.data.rows;
+
+}
+
+async function getRoleUser(roleId) {
+  const response = await listRoleUser(roleId);
+  return response.data.rows;
+}
 
 const prefectStatusLabelMap = stepItems.reduce((acc, cur) => {
   acc[cur.value] = cur.title;
@@ -524,6 +693,34 @@ function toggleEdit() {
   if (!editMode.value) {
     getProjectDetail();
   }
+}
+
+const winLg = ref("24")
+
+function getQueryType() {
+  const type = route.query.type;
+  if (type === "add") {
+    projectInfo.value = {}
+    addMode.value = true;
+    winType.value = "add";
+    const winLg = "24"
+    editMode.value = !editMode.value;
+  } else if (type === "edit") {
+    winType.value = "edit";
+  } else {
+    winType.value = "view";  // 明确设置为 view 模式
+  }
+}
+async function addSubmitProject() {
+  try {
+    saving.value = true;
+  await addProject(projectInfo.value)
+  proxy.$modal.msgSuccess("新增成功");
+  goBack();
+  }finally {
+    saving.value = false;
+  }
+
 }
 
 async function getProjectDetail() {
@@ -602,12 +799,36 @@ async function handleReject() {
   }
 }
 
-onMounted(() => {
-  getProjectDetail();
+onMounted(async () => {
+   // 使用Promise.all并行获取数据
+  const [engineerData,
+    projectMemberData,entYzData,entSyData
+  ] = await Promise.all([
+    getRoleUser(100),
+    getRoleUser(101),
+    getProjectTypeOptions({entType:1}),
+    getProjectTypeOptions({entType:2})
+  ]);
+
+  engineerList.value = engineerData;
+  projectMembersList.value = projectMemberData;
+  entYzList.value = entYzData;
+  entSyList.value = entSyData;
+  await getProjectDetail();
+  getQueryType();
 });
+
 </script>
 
 <style scoped>
+.button-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 0 20px; /* 避免边缘贴边 */
+}
 .page-header {
   display: flex;
   align-items: flex-start;

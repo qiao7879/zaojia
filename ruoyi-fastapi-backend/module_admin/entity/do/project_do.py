@@ -74,3 +74,11 @@ class Project(Base):
     update_name = Column(String(30), nullable=True, comment='更新人名称')
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment='更新时间')
     del_flag = Column(CHAR(1), default='0', comment='删除标志（0-存在/2-删除）')
+
+
+class ProjectUser(Base):
+    __tablename__ = 'project_user'
+    __table_args__ = {'comment': '项目用户关联表'}
+
+    pro_id = Column(Integer, primary_key=True, comment='项目ID')
+    user_id = Column(Integer, nullable=True, comment='用户ID')
