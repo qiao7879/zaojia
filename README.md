@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <h1 align="center">
     <img alt="logo" src="https://oscimg.oschina.net/oscnet/up-d3d0a9303e11d522a06cd263f3079027715.png">
 </h1>
@@ -280,6 +279,3 @@ docker compose -f docker-compose.pg.yml up -d --build
         </td>
     </tr>
 </table>
-=======
-# zaojia
->>>>>>> 7059b722c3e9dc99041b00779d44dc8add029f7a
