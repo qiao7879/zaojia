@@ -48,13 +48,15 @@
             <el-descriptions-item label="项目名称" :label-width="110">
               {{ projectInfo.projectName || "-" }}
             </el-descriptions-item>
+            <el-descriptions-item label="项目类型" :label-width="110">
+              {{ projectInfo.projectType || "-" }}
+            </el-descriptions-item>
             <el-descriptions-item label="业主单位" :label-width="110">
               {{ projectInfo.entName || "-" }}
             </el-descriptions-item>
             <el-descriptions-item label="使用单位" :label-width="110">
               {{ projectInfo.userCompany || "-" }}
             </el-descriptions-item>
-
             <el-descriptions-item label="负责人" :label-width="110">
               {{ projectInfo.projectManager || "-" }}
             </el-descriptions-item>
@@ -103,7 +105,14 @@
               </el-col>
               <el-col :xs="24" :sm="8">
                 <el-form-item label="项目类型">
-                  <el-input v-model="projectInfo.projectType" />
+                  <el-select v-model="projectInfo.projectType" placeholder="请选择项目类型">
+                    <el-option
+                      v-for="item in project_type"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                </el-select>
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :sm="8">
@@ -605,8 +614,8 @@ const entSyList = ref([]);
 const projectMembersList = ref([]);
 const engineerList = ref([]);
 const options = [
-        { label: '是', value: 'yes' },
-        { label: '否', value: 'no' }
+        { label: '是', value: '0' },
+        { label: '否', value: '1' }
       ]
 const stepItems = [
   { value: "01", title: "项目登记" },
@@ -622,6 +631,12 @@ const reconciliationDoneLabel = computed(() => {
   if (value === 1) return '否';
   return '-';
 });
+
+
+
+const { project_type } = proxy.useDict(
+  "project_type"
+);
 
 
 async function getProjectTypeOptions1() {
@@ -695,7 +710,7 @@ function toggleEdit() {
   }
 }
 
-const winLg = ref("24")
+const winLg = ref()
 
 function getQueryType() {
   const type = route.query.type;
@@ -703,12 +718,17 @@ function getQueryType() {
     projectInfo.value = {}
     addMode.value = true;
     winType.value = "add";
-    const winLg = "24"
+    winLg.value = 24
+    console.log("addMode.value",  winLg.value)
     editMode.value = !editMode.value;
   } else if (type === "edit") {
     winType.value = "edit";
+    winLg.value = 24
+    console.log("addMode.value",  winLg.value)
   } else {
-    winType.value = "view";  // 明确设置为 view 模式
+    winType.value = "view";
+    winLg.value = 16// 明确设置为 view 模式
+    console.log("addMode.value",  winLg.value)
   }
 }
 async function addSubmitProject() {

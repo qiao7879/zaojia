@@ -71,7 +71,7 @@ async def add_system_menu(
 
 
 @menu_controller.put(
-    '',
+    '/',
     summary='编辑单位接口',
     description='用于编辑单位',
     response_model=ResponseBaseModel,

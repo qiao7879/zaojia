@@ -1,15 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="130px">
-<!--      <el-form-item label="项目编码" prop="projectCode">-->
-<!--        <el-input-->
-<!--          v-model="queryParams.projectCode"-->
-<!--          placeholder="请输入项目编码"-->
-<!--          clearable-->
-<!--          style="width: 240px"-->
-<!--          @keyup.enter="handleQuery"-->
-<!--        />-->
-<!--      </el-form-item>-->
+
       <el-form-item label="项目全称" prop="projectName">
         <el-input
           v-model="queryParams.projectName"
@@ -20,9 +12,14 @@
         />
       </el-form-item>
       <el-form-item label="项目类型" prop="projectType">
-        <el-select v-model="queryParams.projectType" placeholder="请选择项目类型" clearable style="width: 240px">
-
-        </el-select>
+        <el-select v-model="queryParams.projectType" placeholder="请选择项目类型">
+                    <el-option
+                      v-for="item in project_type"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                </el-select>
       </el-form-item>
       <el-form-item label="负责人" prop="projectManager">
         <el-select v-model="queryParams.projectManager" placeholder="请选择负责人" clearable style="width: 240px">
@@ -38,15 +35,6 @@
         </el-button>
     </el-form-item>
       <template v-if="showAllSearch">
-<!--      <el-form-item label="项目所属企业ID" prop="entId">-->
-<!--        <el-input-->
-<!--          v-model="queryParams.entId"-->
-<!--          placeholder="请输入项目所属企业ID"-->
-<!--          clearable-->
-<!--          style="width: 240px"-->
-<!--          @keyup.enter="handleQuery"-->
-<!--        />-->
-<!--      </el-form-item>-->
       <el-form-item label="业主单位" prop="entName">
         <el-select v-model="queryParams.entName" placeholder="请选择业主单位" clearable style="width: 240px">
           <el-option label="请选择字典生成" value="" />
@@ -63,17 +51,6 @@
           <el-option label="请选择字典生成" value="" />
         </el-select>
       </el-form-item>
-<!--      <el-form-item label="合同签订状态" prop="contractSigned">-->
-<!--        <el-select v-model="queryParams.contractSigned" placeholder="请选择合同签订状态" clearable style="width: 240px">-->
-<!--          <el-option label="请选择字典生成" value="" />-->
-<!--        </el-select>-->
-<!--      </el-form-item>-->
-<!--      <el-form-item label="是否已取" prop="documentObtained">-->
-<!--        <el-select v-model="queryParams.documentObtained" placeholder="请选择是否已取" clearable style="width: 240px">-->
-<!--          <el-option label="请选择字典生成" value="" />-->
-<!--        </el-select>-->
-<!--      </el-form-item>-->
-
       <el-form-item label="项目成果完成状态" prop="deliverableCompleted">
         <el-select v-model="queryParams.deliverableCompleted" placeholder="请选择项目成果完成状态" clearable style="width: 240px">
           <el-option label="请选择字典生成" value="" />
@@ -623,6 +600,9 @@ const total = ref(0);
 const title = ref("");
 const entList = ref([]);
 const userCompanyList = ref([])
+const { project_type } = proxy.useDict(
+  "project_type"
+);
 
 const data = reactive({
   form: {},

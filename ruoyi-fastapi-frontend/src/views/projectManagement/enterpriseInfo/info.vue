@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="120px">
-      <el-form-item label="企业名称" prop="enterpriseName">
+      <el-form-item label="单位名称" prop="enterpriseName">
         <el-input
           v-model="queryParams.enterpriseName"
-          placeholder="请输入企业名称"
+          placeholder="请输入单位名称"
           clearable
           style="width: 240px"
           @keyup.enter="handleQuery"
@@ -19,10 +19,15 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="企业地址" prop="address">
+      <el-form-item label="单位类型" prop="entType">
+        <el-select v-model="queryParams.entType" placeholder="请选择单位类型">
+          <el-option v-for="item in ent_type" :key="item.value" :label="item.label" :value="item.value"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="单位地址" prop="address">
         <el-input
           v-model="queryParams.address"
-          placeholder="请输入企业地址"
+          placeholder="请输入单位地址"
           clearable
           style="width: 240px"
           @keyup.enter="handleQuery"
@@ -120,9 +125,15 @@
                <span>{{ (pageNum - 1) * pageSize + scope.$index + 1 }}</span>
             </template>
          </el-table-column>
-      <el-table-column label="企业名称" align="center" prop="enterpriseName" />
+      <el-table-column label="单位名称" align="center" prop="enterpriseName" />
       <el-table-column label="纳税人识别号" align="center" prop="taxpayerId" />
-      <el-table-column label="企业地址" align="center" prop="address" />
+      <el-table-column label="单位类型" align="center" prop="entType" >
+<!--        <template #default="scope">-->
+<!--          <el-tag v-for="item in ent_type" :key="item.value" v-if="scope.row.entType == item.value">{{ item.label }}</el-tag>-->
+<!--        </template>-->
+<!--        {{entTypeDoneLabel}}-->
+      </el-table-column>
+      <el-table-column label="单位地址" align="center" prop="address" />
       <el-table-column label="联系人" align="center" prop="contactPerson" />
       <el-table-column label="联系电话" align="center" prop="contactPhone" />
       <el-table-column label="开户行" align="center" prop="bankName" />
@@ -143,17 +154,22 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改企业基本信息对话框 -->
+    <!-- 添加或修改单位基本信息对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="infoRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item v-if="renderField(true, true)" label="企业名称" prop="enterpriseName">
-        <el-input v-model="form.enterpriseName" placeholder="请输入企业名称" />
+      <el-form ref="infoRef" :model="form" :rules="rules" label-width="110px">
+      <el-form-item v-if="renderField(true, true)" label="单位名称" prop="enterpriseName">
+        <el-input v-model="form.enterpriseName" placeholder="请输入单位名称" />
       </el-form-item>
       <el-form-item v-if="renderField(true, true)" label="纳税人识别号" prop="taxpayerId">
         <el-input v-model="form.taxpayerId" placeholder="请输入纳税人识别号" />
       </el-form-item>
-      <el-form-item v-if="renderField(true, true)" label="企业地址" prop="address">
-        <el-input v-model="form.address" placeholder="请输入企业地址" />
+      <el-form-item v-if="renderField(true, true)" label="单位类型" prop="taxpayerId">
+        <el-select v-model="form.entType" placeholder="请选择单位类型">
+          <el-option v-for="item in ent_type" :key="item.value" :label="item.label" :value="item.value"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="renderField(true, true)" label="单位地址" prop="address">
+        <el-input v-model="form.address" placeholder="请输入单位地址" />
       </el-form-item>
       <el-form-item v-if="renderField(true, true)" label="联系人" prop="contactPerson">
         <el-input v-model="form.contactPerson" placeholder="请输入联系人" />
@@ -181,6 +197,7 @@
 
 <script setup name="Info">
 import { listEnt, getEnt, addEnt, updateEnt, delEnt } from "@/api/project/enterprise";
+import {computed} from "vue";
 
 const { proxy } = getCurrentInstance();
 
@@ -202,6 +219,7 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     enterpriseName: null,
+    entType: null,
     taxpayerId: null,
     address: null,
     contactPerson: null,
@@ -211,10 +229,13 @@ const data = reactive({
   },
   rules: {
     enterpriseName: [
-      { required: true, message: "企业名称不能为空", trigger: "blur" }
+      { required: true, message: "单位名称不能为空", trigger: "blur" }
     ],
     taxpayerId: [
       { required: true, message: "纳税人识别号不能为空", trigger: "blur" }
+    ],
+    entType: [
+      { required: true, message: "单位类型不能为空", trigger: "blur" }
     ],
     createTime: [
       { required: true, message: "创建时间不能为空", trigger: "blur" }
@@ -227,7 +248,20 @@ const data = reactive({
 
 const { queryParams, form, rules } = toRefs(data);
 
-/** 查询企业基本信息列表 */
+const { ent_type } = proxy.useDict(
+  "ent_type"
+);
+
+const entTypeDoneLabel = computed(() => {
+  console.log('form.value:', form.value)
+  const value = form.value.entType;
+  console.log('form.value2:', value)
+  if (value === 0) return '业主单位';
+  if (value === 1) return '使用单位';
+  return '-';
+});
+
+/** 查询单位基本信息列表 */
 function getList() {
   loading.value = true;
   listEnt(queryParams.value).then(response => {
@@ -249,6 +283,7 @@ function reset() {
     id: null,
     enterpriseName: null,
     taxpayerId: null,
+    entType: null,
     address: null,
     contactPerson: null,
     contactPhone: null,
@@ -283,17 +318,19 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset();
   open.value = true;
-  title.value = "添加企业基本信息";
+  title.value = "添加单位基本信息";
 }
 
 /** 修改按钮操作 */
 function handleUpdate(row) {
   reset();
   const _id = row.id || ids.value;
+
   getEnt(_id).then(response => {
+    console.log(requestUrl)
     form.value = response.data;
     open.value = true;
-    title.value = "修改企业基本信息";
+    title.value = "修改单位基本信息";
   });
 }
 
@@ -321,7 +358,7 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除企业基本信息编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除单位基本信息编号为"' + _ids + '"的数据项？').then(function() {
     return delEnt(_ids);
   }).then(() => {
     getList();
